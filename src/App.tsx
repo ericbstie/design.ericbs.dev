@@ -1,16 +1,12 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  Blobs,
-  CursorStage,
-  LiquidGlass,
-  Noise,
-  Ripple,
-  ThemeToggle,
-  type Theme,
-} from "./components";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Blobs, CursorStage, LiquidGlass, Noise, Ripple, ThemeToggle, type Theme } from "./components";
 import "./index.css";
 
+
 type RippleState = { id: number; x: number; y: number; theme: Theme };
+
+const pageBlobStyle: CSSProperties = { mixBlendMode: "var(--blob-blend)" as never, opacity: "var(--blob-op)" };
+
 
 function Card({ label, children, stage }: { label: string; children?: ReactNode; stage?: ReactNode }) {
   return (
@@ -21,50 +17,50 @@ function Card({ label, children, stage }: { label: string; children?: ReactNode;
   );
 }
 
+function RimHalf({ base, rim }: { base: string; rim: "rim-white" | "rim-black" }) {
+  return (
+    <div className="half" style={{ background: base }}>
+      <div className="chip">
+        <div className={`rim ${rim}`} style={{ opacity: 1 }} />
+      </div>
+    </div>
+  );
+}
+
+
 export function App() {
   const [theme, setTheme] = useState<Theme>("dark");
   const [glass, setGlass] = useState<Theme>("dark");
   const [ripples, setRipples] = useState<RippleState[]>([]);
-  const glassRef = useRef(glass);
-  const ripplesRef = useRef(ripples);
   const idRef = useRef(0);
-  ripplesRef.current = ripples;
+
+  function toggleTheme(x: number, y: number) {
+    const next: Theme = glass === "dark" ? "light" : "dark";
+
+    setGlass(next);
+    setRipples(r => [...r, { id: ++idRef.current, x, y, theme: next }]);
+  }
+
+  function onRippleEnd(ended: RippleState) {
+    const newest = ripples[ripples.length - 1] === ended;
+    if (!newest && ripples[0] !== ended) return;
+
+    setTheme(ended.theme);
+    setRipples(newest ? [] : ripples.slice(1));
+  }
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-  }, [theme]);
-  useEffect(() => {
     document.documentElement.dataset.glass = glass;
-  }, [glass]);
-
-  const toggleTheme = (x: number, y: number) => {
-    const next: Theme = glassRef.current === "dark" ? "light" : "dark";
-    glassRef.current = next;
-    setGlass(next);
-    setRipples(r => [...r, { id: ++idRef.current, x, y, theme: next }]);
-  };
-
-  const onRippleEnd = (id: number) => {
-    const rs = ripplesRef.current;
-    const idx = rs.findIndex(r => r.id === id);
-    if (idx === -1) return;
-    const r = rs[idx]!;
-    if (idx === rs.length - 1) {
-      setTheme(r.theme);
-      setRipples([]);
-    } else if (idx === 0) {
-      setTheme(r.theme);
-      setRipples(rs.slice(1));
-    }
-  };
+  }, [theme, glass]);
 
   return (
     <>
       <div className="page-bg">
-        <Blobs style={{ mixBlendMode: "var(--blob-blend)" as never, opacity: "var(--blob-op)" as never }} />
+        <Blobs style={pageBlobStyle} />
       </div>
       {ripples.map(r => (
-        <Ripple key={r.id} x={r.x} y={r.y} theme={r.theme} onEnd={() => onRippleEnd(r.id)} />
+        <Ripple key={r.id} x={r.x} y={r.y} theme={r.theme} onEnd={() => onRippleEnd(r)} />
       ))}
       <main>
         <h1>Components</h1>
@@ -78,17 +74,9 @@ export function App() {
           <Card
             label="Rim"
             stage={
-              <div className="stage stage-split">
-                <div className="half" style={{ background: "#131310" }}>
-                  <div className="chip">
-                    <div className="rim rim-white" style={{ opacity: 1 }} />
-                  </div>
-                </div>
-                <div className="half" style={{ background: "#eeeae4" }}>
-                  <div className="chip">
-                    <div className="rim rim-black" style={{ opacity: 1 }} />
-                  </div>
-                </div>
+              <div className="stage">
+                <RimHalf base="#131310" rim="rim-white" />
+                <RimHalf base="#eeeae4" rim="rim-black" />
               </div>
             }
           />

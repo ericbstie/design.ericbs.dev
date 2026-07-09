@@ -1,4 +1,14 @@
 
+## Code style
+
+- `function name() {}` over `const name = () => {}` for anything beyond a one-liner.
+- Double quotes, and semicolons at the end of statements.
+- Group code by feature/logic, not by kind: keep a feature's variables, functions, hooks, and events together, one feature after the next — not variables → hooks → functions → lifecycle.
+- 2 blank lines after imports and after every logic group; 1 blank line between steps within a function.
+- Keep code groups (excluding comments) to 1–5 LOC, rarely more.
+- Prefer map/filter/reduce over for loops; prefer for loops over forEach unless passing an already-defined function by name.
+- Prefer small, digestible named functions over long inline arrow functions.
+
 Default to using Bun instead of Node.js.
 
 - Use `bun <file>` instead of `node <file>` or `ts-node <file>`
