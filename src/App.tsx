@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Blobs, Button, LiquidGlass, Ripple, SiteCursor, ThemeToggle, type Theme } from "./components";
+import { Blobs, Button, LiquidGlass, Ripple, ThemeToggle, type Theme } from "./components";
+import { SiteCursor } from "./cursor";
 import "./index.css";
 
 
@@ -8,7 +9,7 @@ type RippleState = { id: number; x: number; y: number; theme: Theme };
 
 function Card({ label, children, stage }: { label: string; children?: ReactNode; stage?: ReactNode }) {
   return (
-    <LiquidGlass className="card">
+    <LiquidGlass className="card" highlight>
       {stage ?? <div className="stage">{children}</div>}
       <div className="card-label">{label}</div>
     </LiquidGlass>

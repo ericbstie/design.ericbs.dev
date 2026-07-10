@@ -19,6 +19,9 @@
   --rim-black: 0;
   --frame: rgba(0, 0, 0, 0.45);
   --text: #fff;
+  --spot-core: 0.5;
+  --spot-mid: 0.2;
+  --spot-ring: 0;
 }
 :root[data-glass="light"] {
   --glass-bg: rgba(255, 255, 255, 0.22);
@@ -26,6 +29,9 @@
   --rim-black: 1;
   --frame: rgba(255, 255, 255, 0.45);
   --text: #131310;
+  --spot-core: 0.85;
+  --spot-mid: 0.4;
+  --spot-ring: 0.12;
 }
 
 body {
@@ -120,14 +126,14 @@ h1 {
   transition: opacity 0.45s ease;
 }
 .rim-white {
-  opacity: var(--rim-white);
+  opacity: calc(var(--rim-white) * var(--rim-fade, 1));
   background: linear-gradient(180deg,
     rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 30%,
     rgba(255, 255, 255, 0.03) 55%, rgba(255, 255, 255, 0.08) 80%,
     rgba(255, 255, 255, 0.28) 100%);
 }
 .rim-black {
-  opacity: var(--rim-black);
+  opacity: calc(var(--rim-black) * var(--rim-fade, 1));
   background: linear-gradient(180deg,
     rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.3) 30%,
     rgba(0, 0, 0, 0.15) 55%, rgba(0, 0, 0, 0.22) 80%,
@@ -205,4 +211,47 @@ h1 {
   box-sizing: border-box;
   pointer-events: none;
   opacity: 0;
+}
+
+.morph-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 999;
+  pointer-events: none;
+}
+
+.morph-rim {
+  fill: none;
+  stroke-width: 1.2;
+  transition: opacity 0.45s ease;
+}
+.morph-sliver {
+  fill: var(--glass-bg);
+}
+.morph-rim-white {
+  stroke: url(#morph-rim-white);
+  opacity: var(--rim-white);
+}
+.morph-rim-black {
+  stroke: url(#morph-rim-black);
+  opacity: var(--rim-black);
+}
+
+.spot-core {
+  stop-color: #fff;
+  stop-opacity: var(--spot-core);
+}
+.spot-mid {
+  stop-color: #fff;
+  stop-opacity: var(--spot-mid);
+}
+.spot-ring {
+  stop-color: #4a4033;
+  stop-opacity: var(--spot-ring);
+}
+.spot-end {
+  stop-color: #fff;
+  stop-opacity: 0;
 }
