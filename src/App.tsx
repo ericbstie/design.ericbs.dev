@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Blobs, Button, GlassCursor, LiquidGlass, Ripple, ThemeToggle, type Theme } from "./components";
+import { Blobs, Button, LiquidGlass, Ripple, SiteCursor, ThemeToggle, type Theme } from "./components";
 import "./index.css";
 
 
@@ -59,9 +59,12 @@ export function App() {
           <Card label="Button">
             <Button>Button</Button>
           </Card>
-          <Card label="GlassCursor" stage={<GlassCursor glass={glass} onToggle={toggleTheme} />} />
+          <Card label="ThemeToggle">
+            <ThemeToggle glass={glass} onToggle={toggleTheme} />
+          </Card>
         </div>
       </main>
+      <SiteCursor />
     </>
   );
 }

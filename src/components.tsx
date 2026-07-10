@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type MouseEvent, type ReactNode, type Ref } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode, type Ref } from "react";
 
 
 export type Theme = "dark" | "light";
@@ -18,12 +18,12 @@ function lerp(a: number, b: number, t: number) {
 
 
 const blobDefs = [
-  { c: "#e8590c", r: 150, ox: 0.18, oy: 0.3, axx: 0.3, axy: 0.26, fx: 0.00042, fy: 0.00029, p: 0 },
-  { c: "#1971c2", r: 180, ox: 0.72, oy: 0.25, axx: 0.28, axy: 0.32, fx: 0.00032, fy: 0.00045, p: 2.1 },
-  { c: "#e64980", r: 140, ox: 0.45, oy: 0.7, axx: 0.34, axy: 0.24, fx: 0.0005, fy: 0.00035, p: 4.2 },
-  { c: "#0ca678", r: 160, ox: 0.88, oy: 0.75, axx: 0.26, axy: 0.3, fx: 0.00027, fy: 0.0004, p: 1.3 },
-  { c: "#6741d9", r: 170, ox: 0.12, oy: 0.85, axx: 0.3, axy: 0.28, fx: 0.00038, fy: 0.0003, p: 3.4 },
-  { c: "#f08c00", r: 130, ox: 0.55, oy: 0.12, axx: 0.28, axy: 0.32, fx: 0.00045, fy: 0.00036, p: 5.1 },
+  { c: "#e8590c", rs: 0.22, ox: 0.18, oy: 0.3, axx: 0.3, axy: 0.26, fx: 0.00012, fy: 0.00008, p: 0 },
+  { c: "#1971c2", rs: 0.26, ox: 0.72, oy: 0.25, axx: 0.28, axy: 0.32, fx: 0.00009, fy: 0.00013, p: 2.1 },
+  { c: "#e64980", rs: 0.2, ox: 0.45, oy: 0.7, axx: 0.34, axy: 0.24, fx: 0.00014, fy: 0.0001, p: 4.2 },
+  { c: "#0ca678", rs: 0.24, ox: 0.88, oy: 0.75, axx: 0.26, axy: 0.3, fx: 0.00008, fy: 0.00011, p: 1.3 },
+  { c: "#6741d9", rs: 0.25, ox: 0.12, oy: 0.85, axx: 0.3, axy: 0.28, fx: 0.00011, fy: 0.00009, p: 3.4 },
+  { c: "#f08c00", rs: 0.19, ox: 0.55, oy: 0.12, axx: 0.28, axy: 0.32, fx: 0.00013, fy: 0.0001, p: 5.1 },
 ];
 
 export function Blobs({ style }: { style?: CSSProperties }) {
@@ -36,9 +36,13 @@ export function Blobs({ style }: { style?: CSSProperties }) {
       const rc = ref.current!.getBoundingClientRect();
 
       for (const [i, d] of blobDefs.entries()) {
-        const x = (d.ox + Math.sin(t * d.fx + d.p) * d.axx) * rc.width - d.r;
-        const y = (d.oy + Math.cos(t * d.fy + d.p) * d.axy) * rc.height - d.r;
-        els[i]!.style.transform = `translate(${x}px,${y}px)`;
+        const r = d.rs * rc.width;
+        const x = (d.ox + Math.sin(t * d.fx + d.p) * d.axx) * rc.width - r;
+        const y = (d.oy + Math.cos(t * d.fy + d.p) * d.axy) * rc.height - r;
+        const el = els[i]!;
+
+        el.style.width = el.style.height = r * 2 + "px";
+        el.style.transform = `translate(${x}px,${y}px)`;
       }
 
       raf = requestAnimationFrame(tick);
@@ -53,7 +57,7 @@ export function Blobs({ style }: { style?: CSSProperties }) {
         <div
           key={d.c}
           className="blob"
-          style={{ width: d.r * 2, height: d.r * 2, background: `radial-gradient(circle, ${d.c}cc 0%, ${d.c}55 45%, transparent 70%)` }}
+          style={{ background: `radial-gradient(circle, ${d.c}cc 0%, ${d.c}55 45%, transparent 70%)` }}
         />
       ))}
     </div>
@@ -155,49 +159,67 @@ export function Ripple({ x, y, theme, onEnd }: { x: number; y: number; theme: Th
 }
 
 
-export function GlassCursor({ glass, onToggle }: { glass: Theme; onToggle: ToggleFn }) {
-  const stageRef = useRef<HTMLDivElement>(null);
+const SNAP_SELECTOR = "button, a, [data-cursor-snap]";
+
+function snapBox(el: HTMLElement) {
+  const r = el.getBoundingClientRect();
+
+  return { cx: r.left + r.width / 2, cy: r.top + r.height / 2, w: r.width, h: r.height };
+}
+
+function snapRange(b: ReturnType<typeof snapBox>, pad: number) {
+  return Math.max(b.w, b.h) / 2 + pad;
+}
+
+function findSnapTarget(mx: number, my: number, current: HTMLElement | null) {
+  if (current?.isConnected) {
+    const b = snapBox(current);
+    if (Math.hypot(mx - b.cx, my - b.cy) < snapRange(b, 44)) return current;
+  }
+
+  const els = [...document.querySelectorAll<HTMLElement>(SNAP_SELECTOR)];
+
+  return els.reduce<{ el: HTMLElement; dist: number } | null>((best, el) => {
+    const b = snapBox(el);
+    const dist = Math.hypot(mx - b.cx, my - b.cy);
+
+    if (dist >= snapRange(b, 16)) return best;
+    return !best || dist < best.dist ? { el, dist } : best;
+  }, null)?.el ?? null;
+}
+
+export function SiteCursor() {
   const bubRef = useRef<HTMLDivElement>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const s = useRef({ mx: 80, my: 80, x: 80, y: 80, w: 30, h: 30, tw: 30, th: 30, snapped: false, inside: false });
-
-  function onMouseMove(e: MouseEvent) {
-    const r = stageRef.current!.getBoundingClientRect();
-
-    Object.assign(s.current, { mx: e.clientX - r.left, my: e.clientY - r.top, inside: true });
-  }
-
-  function onMouseLeave() {
-    Object.assign(s.current, { inside: false, snapped: false });
-  }
-
-  function onClick(e: MouseEvent) {
-    if (s.current.snapped) onToggle(e.clientX, e.clientY);
-  }
+  const s = useRef({ mx: -100, my: -100, x: -100, y: -100, w: 30, h: 30, tw: 30, th: 30, inside: false, target: null as HTMLElement | null });
 
   useEffect(() => {
     const st = s.current;
 
+    function onMouseMove(e: globalThis.MouseEvent) {
+      Object.assign(st, { mx: e.clientX, my: e.clientY, inside: true });
+    }
+
+    function onMouseLeave() {
+      Object.assign(st, { inside: false, target: null });
+    }
+
+    window.addEventListener("mousemove", onMouseMove);
+    document.documentElement.addEventListener("mouseleave", onMouseLeave);
+
     let raf = requestAnimationFrame(function tick() {
-      const rc = stageRef.current!.getBoundingClientRect();
-      const br = btnRef.current!.getBoundingClientRect();
-      const b = { cx: br.left - rc.left + br.width / 2, cy: br.top - rc.top + br.height / 2, w: br.width, h: br.height };
-
-      const dx = st.mx - b.cx;
-      const dy = st.my - b.cy;
-      const dist = Math.hypot(dx, dy);
-
-      const snapIn = Math.max(b.w, b.h) / 2 + 16;
-      const snapOut = Math.max(b.w, b.h) / 2 + 44;
-      if (!st.snapped && dist < snapIn) st.snapped = true;
-      if (st.snapped && dist > snapOut) st.snapped = false;
+      st.target = st.inside ? findSnapTarget(st.mx, st.my, st.target) : null;
 
       let tx = st.mx;
       let ty = st.my;
       let ease = 0.2;
 
-      if (st.snapped) {
-        const off = Math.min(dist / snapOut, 1) * 9;
+      if (st.target) {
+        const b = snapBox(st.target);
+        const dx = st.mx - b.cx;
+        const dy = st.my - b.cy;
+        const dist = Math.hypot(dx, dy);
+
+        const off = Math.min(dist / snapRange(b, 44), 1) * 9;
         tx = b.cx + (dx / (dist || 1)) * off;
         ty = b.cy + (dy / (dist || 1)) * off;
         ease = 0.12;
@@ -221,17 +243,16 @@ export function GlassCursor({ glass, onToggle }: { glass: Theme; onToggle: Toggl
       raf = requestAnimationFrame(tick);
     });
 
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("mousemove", onMouseMove);
+      document.documentElement.removeEventListener("mouseleave", onMouseLeave);
+    };
   }, []);
 
   return (
-    <div ref={stageRef} className="stage cursor-stage" onMouseMove={onMouseMove} onMouseLeave={onMouseLeave} onClick={onClick}>
-      <LiquidGlass ref={bubRef} className="bubble">
-        <Noise />
-      </LiquidGlass>
-      <button ref={btnRef} className="theme-toggle target" aria-label="Toggle theme">
-        <ThemeIcon glass={glass} />
-      </button>
-    </div>
+    <LiquidGlass ref={bubRef} className="bubble">
+      <Noise />
+    </LiquidGlass>
   );
 }

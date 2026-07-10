@@ -47,7 +47,7 @@ body {
 .blobs {
   position: absolute;
   inset: -15%;
-  filter: blur(34px);
+  filter: blur(clamp(40px, 5vw, 90px));
   will-change: transform;
   mix-blend-mode: var(--blob-blend);
   opacity: var(--blob-op);
@@ -174,7 +174,6 @@ h1 {
   padding: 0.75rem 1.75rem;
   font: inherit;
   color: var(--text);
-  cursor: pointer;
   transition: background 0.45s ease, color 0.45s ease;
 }
 
@@ -182,7 +181,6 @@ h1 {
   background: transparent;
   border: none;
   padding: 14px;
-  cursor: pointer;
   color: #fff;
   mix-blend-mode: difference;
   display: flex;
@@ -190,28 +188,21 @@ h1 {
   justify-content: center;
 }
 
-.cursor-stage {
-  cursor: none;
-  user-select: none;
+@media (pointer: fine) {
+  html, body, button, a {
+    cursor: none;
+  }
 }
 
 .bubble {
-  position: absolute;
+  position: fixed;
   left: 0;
   top: 0;
+  z-index: 1000;
   width: 30px;
   height: 30px;
   border-radius: 15px;
   box-sizing: border-box;
   pointer-events: none;
   opacity: 0;
-}
-
-.target {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  cursor: none;
 }
