@@ -3,7 +3,9 @@ import { LiquidGlass, Noise } from "./components";
 
 
 const HIGHLIGHT_SELECTOR = "[data-glass-highlight]";
+const SVG_NS = "http://www.w3.org/2000/svg";
 
+const WAKE_RANGE = 64;
 const ENGAGE_RANGE = 44;
 const BULGE_REACH = 42;
 const BULGE_AMP = 13;
@@ -20,6 +22,15 @@ function clamp(x: number, lo: number, hi: number) {
 function smooth(x: number) {
   const t = clamp(x, 0, 1);
   return t * t * (3 - 2 * t);
+}
+
+
+type Spring = { x: number; v: number };
+
+function spring(s: Spring, target: number, k: number, damp: number) {
+  s.v = (s.v + (target - s.x) * k) * damp;
+  s.x += s.v;
+  return s.x;
 }
 
 
@@ -107,7 +118,9 @@ export function perimeterSamples(b: Box): Sample[] {
 type Bump = { x: number; y: number; amp: number; width: number };
 
 function displace(s: Sample, bump: Bump): { x: number; y: number } {
-  const t = smooth(1 - Math.hypot(s.x - bump.x, s.y - bump.y) / bump.width);
+  const q = Math.hypot(s.x - bump.x, s.y - bump.y) / bump.width;
+  const t = smooth(1 - q * q);
+
   return { x: s.x + s.nx * bump.amp * t, y: s.y + s.ny * bump.amp * t };
 }
 
@@ -136,34 +149,66 @@ function toPathD(pts: { x: number; y: number }[]) {
 }
 
 
-function findTarget(mx: number, my: number) {
-  const els = [...document.querySelectorAll<HTMLElement>(HIGHLIGHT_SELECTOR)];
+type Shell = {
+  el: HTMLElement;
+  box: Box;
+  d: number;
+  g: SVGGElement;
+  sliver: SVGPathElement;
+  rimW: SVGPathElement;
+  rimB: SVGPathElement;
+  fade: number;
+  amp: Spring;
+  bx: number;
+  by: number;
+  pathD: string | null;
+  seen: boolean;
+};
 
-  const cands = els
-    .map(el => ({ el, box: measure(el) }))
-    .filter(c => c.box.hw > 0)
-    .map(c => ({ ...c, d: signedDistance(c.box, mx, my) }))
-    .filter(c => c.d < ENGAGE_RANGE);
+function svgEl<T extends SVGElement>(tag: string, className = "") {
+  const node = document.createElementNS(SVG_NS, tag) as T;
+  if (className) node.setAttribute("class", className);
+  return node;
+}
 
-  const outside = cands.filter(c => c.d >= 0);
-  if (outside.length) return outside.reduce((a, c) => (c.d < a.d ? c : a));
+function createShell(el: HTMLElement, box: Box, layer: SVGGElement): Shell {
+  const g = svgEl<SVGGElement>("g");
+  const sliver = svgEl<SVGPathElement>("path", "morph-sliver");
+  const rimW = svgEl<SVGPathElement>("path", "morph-rim morph-rim-white");
+  const rimB = svgEl<SVGPathElement>("path", "morph-rim morph-rim-black");
 
-  return cands.reduce<(typeof cands)[number] | null>((a, c) => (!a || c.d > a.d ? c : a), null);
+  sliver.setAttribute("fill-rule", "evenodd");
+  g.append(sliver, rimW, rimB);
+  g.style.opacity = "0";
+  layer.append(g);
+
+  const sp = surfacePoint(box, box.cx, box.cy - box.hh);
+  return { el, box, d: WAKE_RANGE, g, sliver, rimW, rimB, fade: 0, amp: { x: 0, v: 0 }, bx: sp.x, by: sp.y, pathD: null, seen: true };
+}
+
+function disposeShell(shell: Shell) {
+  shell.el.style.removeProperty("--rim-fade");
+  shell.g.remove();
 }
 
 
 export function SiteCursor() {
   const bubRef = useRef<HTMLDivElement>(null);
-  const spotRef = useRef<SVGCircleElement>(null);
-  const shellRef = useRef<SVGGElement>(null);
-  const sliverRef = useRef<SVGPathElement>(null);
-  const pathRefs = useRef<(SVGPathElement | null)[]>([]);
+  const spotARef = useRef<SVGCircleElement>(null);
+  const spotBRef = useRef<SVGCircleElement>(null);
+  const ambientRef = useRef<SVGGElement>(null);
+  const boostRef = useRef<SVGGElement>(null);
+  const clipRef = useRef<SVGPathElement>(null);
+  const boostClipRef = useRef<SVGPathElement>(null);
+  const shellLayerRef = useRef<SVGGElement>(null);
 
   const s = useRef({
     mx: -100, my: -100, inside: false,
-    x: -100, y: -100, size: BUBBLE_SIZE, opacity: 0, stretch: 0, angle: 0,
-    target: null as HTMLElement | null, fading: null as HTMLElement | null, box: null as Box | null,
-    amp: 0, bx: 0, by: 0, shell: 0, spotX: 0, spotY: 0, spotO: 0, spotR: 26,
+    x: { x: -100, v: 0 }, y: { x: -100, v: 0 }, size: { x: BUBBLE_SIZE, v: 0 },
+    opacity: 0, stretch: 0, angle: 0,
+    spotX: { x: -100, v: 0 }, spotY: { x: -100, v: 0 }, spotO: 0, spotR: 26,
+    boostEl: null as HTMLElement | null, boostO: 0,
+    shells: new Map<HTMLElement, Shell>(),
   });
 
   useEffect(() => {
@@ -180,118 +225,156 @@ export function SiteCursor() {
     window.addEventListener("mousemove", onMouseMove);
     document.documentElement.addEventListener("mouseleave", onMouseLeave);
 
-    function acquire(el: HTMLElement | null, sp: { x: number; y: number } | null) {
-      if (el) st.target?.style.removeProperty("--rim-fade");
-      else st.fading = st.target;
+    function wakeShells() {
+      for (const shell of st.shells.values()) shell.seen = false;
+      if (!st.inside) return;
 
-      if (st.fading && st.fading !== st.target && el) restoreFading();
-      st.target = el;
+      for (const el of document.querySelectorAll<HTMLElement>(HIGHLIGHT_SELECTOR)) {
+        const box = measure(el);
+        if (box.hw <= 0) continue;
 
-      if (el && sp) Object.assign(st, { bx: sp.x, by: sp.y, spotX: st.mx, spotY: st.my });
+        const d = signedDistance(box, st.mx, st.my);
+        if (d >= WAKE_RANGE && !st.shells.has(el)) continue;
+
+        const shell = st.shells.get(el) ?? createShell(el, box, shellLayerRef.current!);
+        Object.assign(shell, { box, d, seen: true });
+        st.shells.set(el, shell);
+      }
     }
 
-    function restoreFading() {
-      st.fading?.style.removeProperty("--rim-fade");
-      st.fading = null;
+    function nearestShell() {
+      const shells = [...st.shells.values()].filter(sh => sh.seen);
+      return shells.reduce<Shell | null>((a, sh) => (!a || sh.d < a.d ? sh : a), null);
+    }
+
+    function updateBoost(shells: Shell[]) {
+      const inner = shells
+        .filter(sh => sh.seen && sh.d < 0 && sh.pathD)
+        .reduce<Shell | null>((a, sh) => (!a || sh.d > a.d ? sh : a), null);
+
+      const match = (inner?.el ?? null) === st.boostEl;
+      st.boostO = lerp(st.boostO, inner && match ? 1 : 0, 0.25);
+      if (!match && st.boostO < 0.05) st.boostEl = inner?.el ?? null;
+
+      const boostShell = st.boostEl ? st.shells.get(st.boostEl) : null;
+      boostClipRef.current!.setAttribute("d", boostShell?.pathD ?? "M0 0Z");
+    }
+
+    function updateShell(shell: Shell) {
+      const engaged = shell.seen && shell.d < ENGAGE_RANGE;
+      shell.fade = lerp(shell.fade, engaged ? 1 : 0, 0.22);
+
+      let ampT = 0;
+      if (engaged) {
+        const reach = shell.d < 0 ? Math.min(BULGE_REACH, Math.min(shell.box.hw, shell.box.hh) * 0.8) : BULGE_REACH;
+        ampT = BULGE_AMP * smooth(1 - Math.abs(shell.d) / reach);
+        if (shell.d > 0) ampT = Math.min(ampT, shell.d);
+      }
+
+      spring(shell.amp, ampT, 0.16, 0.78);
+
+      if (shell.seen) {
+        const sp = surfacePoint(shell.box, st.mx, st.my);
+        const jump = Math.hypot(sp.x - shell.bx, sp.y - shell.by) > 70;
+
+        shell.bx = jump ? sp.x : lerp(shell.bx, sp.x, 0.35);
+        shell.by = jump ? sp.y : lerp(shell.by, sp.y, 0.35);
+      }
+
+      shell.el.style.setProperty("--rim-fade", String(1 - shell.fade));
+      shell.g.style.opacity = String(shell.fade);
+      shell.pathD = null;
+
+      if (shell.fade > 0.005) {
+        const amp = Math.max(shell.amp.x, 0);
+        const width = Math.min(clamp(amp * 4.5, 44, 90), Math.min(shell.box.hw, shell.box.hh) * 2);
+        const d = bulgePath(shell.box, { x: shell.bx, y: shell.by, amp, width });
+
+        shell.rimW.setAttribute("d", d);
+        shell.rimB.setAttribute("d", d);
+        shell.sliver.setAttribute("d", d + bulgePath(shell.box, null));
+        shell.pathD = d;
+      }
     }
 
     function step() {
-      const found = st.inside ? findTarget(st.mx, st.my) : null;
-      const sp = found ? surfacePoint(found.box, st.mx, st.my) : null;
+      wakeShells();
 
-      if ((found?.el ?? null) !== st.target) acquire(found?.el ?? null, sp);
-      if (found) st.box = found.box;
+      const shells = [...st.shells.values()];
+      shells.forEach(updateShell);
+      clipRef.current!.setAttribute("d", shells.map(sh => sh.pathD).filter(Boolean).join("") || "M0 0Z");
 
-      const d = found ? found.d : Infinity;
-      const grown = found ? smooth(d / ENGAGE_RANGE) : 1;
+      for (const [el, shell] of st.shells) {
+        if (!shell.seen && shell.fade < 0.02) {
+          disposeShell(shell);
+          st.shells.delete(el);
+        }
+      }
+
+      updateBoost(shells);
+      const near = nearestShell();
+      const dMin = near ? near.d : Infinity;
+      const grown = near ? smooth(dMin / ENGAGE_RANGE) : 1;
 
       let tx = st.mx;
       let ty = st.my;
-      let ease = 0.22;
 
-      let ampT = 0;
-      if (found) {
-        const reach = d < 0 ? Math.min(BULGE_REACH, Math.min(found.box.hw, found.box.hh) * 0.8) : BULGE_REACH;
-        ampT = BULGE_AMP * smooth(1 - Math.abs(d) / reach);
-        if (d > 0) ampT = Math.min(ampT, d);
-      }
-
-      if (found && sp && d >= 0) {
-        tx = lerp(st.mx, sp.x + sp.nx * ampT, 1 - grown);
-        ty = lerp(st.my, sp.y + sp.ny * ampT, 1 - grown);
-        ease = 0.3;
+      if (near && dMin >= 0 && dMin < ENGAGE_RANGE) {
+        const sp = surfacePoint(near.box, st.mx, st.my);
+        tx = lerp(st.mx, sp.x + sp.nx * Math.max(near.amp.x, 0), 1 - grown);
+        ty = lerp(st.my, sp.y + sp.ny * Math.max(near.amp.x, 0), 1 - grown);
         st.angle = Math.atan2(sp.ny, sp.nx);
       }
 
-      const stretchT = found && d >= 0 ? smooth(1 - d / 44) * 0.6 : 0;
+      const stretchT = near && dMin >= 0 ? smooth(1 - dMin / 44) * 0.6 : 0;
       st.stretch = lerp(st.stretch, stretchT, 0.25);
 
-      st.amp = lerp(st.amp, ampT, 0.25);
-      if (sp) st.bx = lerp(st.bx, sp.x, 0.35);
-      if (sp) st.by = lerp(st.by, sp.y, 0.35);
-
-      st.x = lerp(st.x, tx, ease);
-      st.y = lerp(st.y, ty, ease);
-      st.size = lerp(st.size, BUBBLE_SIZE * grown, 0.22);
+      spring(st.x, tx, 0.2, 0.72);
+      spring(st.y, ty, 0.2, 0.72);
+      spring(st.size, BUBBLE_SIZE * grown, 0.16, 0.72);
       st.opacity = lerp(st.opacity, st.inside && grown > 0.1 ? 1 : 0, 0.3);
 
-      st.shell = lerp(st.shell, found ? 1 : 0, 0.25);
-      st.spotO = lerp(st.spotO, found ? 1 - grown : 0, 0.25);
-      st.spotX = lerp(st.spotX, st.mx, 0.3);
-      st.spotY = lerp(st.spotY, st.my, 0.3);
-      if (st.box) st.spotR = lerp(st.spotR, clamp(Math.min(st.box.hw, st.box.hh) * 0.7, 22, 48), 0.2);
+      st.spotO = lerp(st.spotO, near ? 1 - grown : 0, 0.25);
+      spring(st.spotX, st.mx, 0.12, 0.8);
+      spring(st.spotY, st.my, 0.12, 0.8);
+      if (near) st.spotR = lerp(st.spotR, clamp(Math.min(near.box.hw, near.box.hh) * 0.7, 22, 48), 0.2);
 
       render();
       raf = requestAnimationFrame(step);
     }
 
     function render() {
-      const len = st.size * (1 + st.stretch);
-      const girth = st.size * (1 - st.stretch * 0.35);
+      const size = Math.max(st.size.x, 0);
+      const len = size * (1 + st.stretch);
+      const girth = size * (1 - st.stretch * 0.35);
 
       const bub = bubRef.current!.style;
       bub.width = len + "px";
       bub.height = girth + "px";
       bub.borderRadius = girth / 2 + "px";
-      bub.transform = `translateZ(0) translate(${st.x - len / 2}px,${st.y - girth / 2}px) rotate(${st.angle}rad)`;
+      bub.transform = `translateZ(0) translate(${st.x.x - len / 2}px,${st.y.x - girth / 2}px) rotate(${st.angle}rad)`;
       bub.opacity = String(st.opacity);
 
-      shellRef.current!.style.opacity = String(st.shell);
-      st.target?.style.setProperty("--rim-fade", String(1 - st.shell));
-
-      if (st.fading && !st.target) st.fading.style.setProperty("--rim-fade", String(1 - st.shell));
-      if (st.fading && !st.target && st.shell < 0.02) restoreFading();
-
-      if (st.box && st.shell > 0.01) {
-        const d = bulgePath(st.box, { x: st.bx, y: st.by, amp: st.amp, width: clamp(st.amp * 4.5, 44, 90) });
-        for (const p of pathRefs.current) p?.setAttribute("d", d);
-
-        sliverRef.current!.setAttribute("d", d + bulgePath(st.box, null));
+      for (const spot of [spotARef.current!, spotBRef.current!]) {
+        spot.setAttribute("cx", String(st.spotX.x));
+        spot.setAttribute("cy", String(st.spotY.x));
+        spot.setAttribute("r", String(st.spotR));
       }
 
-      const spot = spotRef.current!;
-      spot.setAttribute("cx", String(st.spotX));
-      spot.setAttribute("cy", String(st.spotY));
-      spot.setAttribute("r", String(st.spotR));
-      spot.style.opacity = String(st.spotO);
+      ambientRef.current!.style.opacity = String(st.spotO * 0.45);
+      boostRef.current!.style.opacity = String(st.spotO * 0.55 * st.boostO);
     }
 
     let raf = requestAnimationFrame(step);
 
     return () => {
       cancelAnimationFrame(raf);
-      st.target?.style.removeProperty("--rim-fade");
-      restoreFading();
+      for (const shell of st.shells.values()) disposeShell(shell);
+      st.shells.clear();
       window.removeEventListener("mousemove", onMouseMove);
       document.documentElement.removeEventListener("mouseleave", onMouseLeave);
     };
   }, []);
-
-  function setPathRef(i: number) {
-    return (el: SVGPathElement | null) => {
-      pathRefs.current[i] = el;
-    };
-  }
 
   return (
     <>
@@ -313,24 +396,25 @@ export function SiteCursor() {
           </linearGradient>
           <radialGradient id="morph-spot">
             <stop offset="0%" className="spot-core" />
-            <stop offset="45%" className="spot-mid" />
-            <stop offset="75%" className="spot-ring" />
+            <stop offset="55%" className="spot-mid" />
             <stop offset="100%" className="spot-end" />
           </radialGradient>
           <filter id="morph-spot-blur" x="-60%" y="-60%" width="220%" height="220%">
             <feGaussianBlur stdDeviation="8" />
           </filter>
           <clipPath id="morph-clip">
-            <path ref={setPathRef(0)} />
+            <path ref={clipRef} />
+          </clipPath>
+          <clipPath id="morph-clip-boost">
+            <path ref={boostClipRef} />
           </clipPath>
         </defs>
-        <g ref={shellRef} style={{ opacity: 0 }}>
-          <path ref={sliverRef} className="morph-sliver" fillRule="evenodd" />
-          <g clipPath="url(#morph-clip)">
-            <circle ref={spotRef} r="26" fill="url(#morph-spot)" filter="url(#morph-spot-blur)" />
-          </g>
-          <path ref={setPathRef(1)} className="morph-rim morph-rim-white" />
-          <path ref={setPathRef(2)} className="morph-rim morph-rim-black" />
+        <g ref={shellLayerRef} />
+        <g ref={ambientRef} clipPath="url(#morph-clip)" style={{ opacity: 0 }}>
+          <circle ref={spotARef} r="26" fill="url(#morph-spot)" filter="url(#morph-spot-blur)" />
+        </g>
+        <g ref={boostRef} clipPath="url(#morph-clip-boost)" style={{ opacity: 0 }}>
+          <circle ref={spotBRef} r="26" fill="url(#morph-spot)" filter="url(#morph-spot-blur)" />
         </g>
       </svg>
       <LiquidGlass ref={bubRef} className="bubble">

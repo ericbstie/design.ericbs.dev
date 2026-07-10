@@ -19,9 +19,9 @@
   --rim-black: 0;
   --frame: rgba(0, 0, 0, 0.45);
   --text: #fff;
+  --spot-color: #fff;
   --spot-core: 0.5;
   --spot-mid: 0.2;
-  --spot-ring: 0;
 }
 :root[data-glass="light"] {
   --glass-bg: rgba(255, 255, 255, 0.22);
@@ -29,9 +29,9 @@
   --rim-black: 1;
   --frame: rgba(255, 255, 255, 0.45);
   --text: #131310;
-  --spot-core: 0.85;
-  --spot-mid: 0.4;
-  --spot-ring: 0.12;
+  --spot-color: #131310;
+  --spot-core: 0.22;
+  --spot-mid: 0.09;
 }
 
 body {
@@ -240,18 +240,14 @@ h1 {
 }
 
 .spot-core {
-  stop-color: #fff;
+  stop-color: var(--spot-color);
   stop-opacity: var(--spot-core);
 }
 .spot-mid {
-  stop-color: #fff;
+  stop-color: var(--spot-color);
   stop-opacity: var(--spot-mid);
 }
-.spot-ring {
-  stop-color: #4a4033;
-  stop-opacity: var(--spot-ring);
-}
 .spot-end {
-  stop-color: #fff;
+  stop-color: var(--spot-color);
   stop-opacity: 0;
 }
