@@ -142,6 +142,8 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
 
 /* ---------- Select / MultiSelect / pickers popover ---------- */
 .ui-popover-anchor { position: relative; }
+.ui-popover-anchor:has(.ui-popover) { z-index: 60; }
+.liquid-glass:has(.ui-popover) { z-index: 60; }
 .ui-select-trigger {
   display: flex;
   align-items: center;

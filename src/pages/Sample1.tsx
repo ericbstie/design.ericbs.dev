@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Breadcrumb, Button, Card, Field, Form, Input, Link, Progress, Tag, useToast } from "../ui";
-import { RouteLink } from "../router";
+import { RouteLink, useRouter } from "../router";
 
 
 const FEATURES = [
@@ -12,6 +12,7 @@ const FEATURES = [
 
 export function Sample1() {
   const toast = useToast();
+  const { navigate } = useRouter();
   const [email, setEmail] = useState("");
 
   function subscribe() {
@@ -29,7 +30,7 @@ export function Sample1() {
         <p>Prism is a glass-first component library: frosted panels, prismatic loading states, and color that breathes behind every surface.</p>
         <div className="demo-row">
           <Button variant="primary" onClick={() => toast("Download started", "success")}>Get started</Button>
-          <RouteLink to="/sample/2"><Button variant="ghost">See it live →</Button></RouteLink>
+          <Button variant="ghost" onClick={() => navigate("/sample/2")}>See it live →</Button>
         </div>
       </section>
 

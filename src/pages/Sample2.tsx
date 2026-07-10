@@ -37,7 +37,7 @@ export function Sample2() {
       <Breadcrumb items={[{ label: <RouteLink className="ui-link" to="/">Components</RouteLink> }, { label: "Sample 2 — Dashboard" }]} />
 
       <div className="dash-toolbar">
-        <h2>Pipelines</h2>
+        <h2>Overview</h2>
         <div className="demo-row">
           <Toggle checked={autoRefresh} onChange={setAutoRefresh} label="Auto refresh" />
           <div className="dash-range"><Select options={RANGES} value={range} onChange={changeRange} /></div>
