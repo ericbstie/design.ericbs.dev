@@ -114,3 +114,17 @@ bun --hot ./index.ts
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+
+
+## Chrome DevTools MCP
+
+`.mcp.json` configures the [`chrome-devtools-mcp`](https://github.com/ChromeDevTools/chrome-devtools-mcp) server so the agent can drive a real browser — navigate, screenshot, inspect the DOM, run performance traces, and read console/network activity against the running dev server (`bun dev`).
+
+The flags in `.mcp.json` are tuned for the headless Claude Code web container:
+
+- `--headless` — no display/X server is available.
+- `--isolated` — each run uses a throwaway user-data-dir.
+- `--executablePath /opt/pw-browsers/chromium-1194/chrome-linux/chrome` — reuse the pre-installed Chromium instead of downloading one (network-restricted).
+- `--chrome-arg=--no-sandbox --chrome-arg=--disable-setuid-sandbox` — Chrome runs as root in the container and refuses the sandbox.
+
+On a local machine, drop the container-specific flags (`--executablePath`, `--no-sandbox`) and let it use your installed Chrome. The `chromium-1194` path is version-pinned to Playwright's bundled build; update it if that bundle changes.
