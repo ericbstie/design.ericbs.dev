@@ -25,11 +25,11 @@ function smooth(x: number) {
 }
 
 
-type Spring = { x: number; v: number };
+type Glide = { x: number; v: number };
 
-function spring(s: Spring, target: number, k: number, damp: number) {
-  s.v = (s.v + (target - s.x) * k) * damp;
-  s.x += s.v;
+function glide(s: Glide, target: number, r: number) {
+  s.v = lerp(s.v, target, r);
+  s.x = lerp(s.x, s.v, r);
   return s.x;
 }
 
@@ -158,7 +158,7 @@ type Shell = {
   rimW: SVGPathElement;
   rimB: SVGPathElement;
   fade: number;
-  amp: Spring;
+  amp: Glide;
   bx: number;
   by: number;
   pathD: string | null;
@@ -204,9 +204,9 @@ export function SiteCursor() {
 
   const s = useRef({
     mx: -100, my: -100, inside: false,
-    x: { x: -100, v: 0 }, y: { x: -100, v: 0 }, size: { x: BUBBLE_SIZE, v: 0 },
+    x: { x: -100, v: -100 }, y: { x: -100, v: -100 }, size: { x: BUBBLE_SIZE, v: BUBBLE_SIZE },
     opacity: 0, stretch: 0, angle: 0,
-    spotX: { x: -100, v: 0 }, spotY: { x: -100, v: 0 }, spotO: 0, spotR: 26,
+    spotX: { x: -100, v: -100 }, spotY: { x: -100, v: -100 }, spotO: 0, spotR: 26,
     boostEl: null as HTMLElement | null, boostO: 0,
     shells: new Map<HTMLElement, Shell>(),
   });
@@ -271,7 +271,7 @@ export function SiteCursor() {
         if (shell.d > 0) ampT = Math.min(ampT, shell.d);
       }
 
-      spring(shell.amp, ampT, 0.16, 0.78);
+      glide(shell.amp, ampT, 0.3);
 
       if (shell.seen) {
         const sp = surfacePoint(shell.box, st.mx, st.my);
@@ -329,14 +329,14 @@ export function SiteCursor() {
       const stretchT = near && dMin >= 0 ? smooth(1 - dMin / 44) * 0.6 : 0;
       st.stretch = lerp(st.stretch, stretchT, 0.25);
 
-      spring(st.x, tx, 0.2, 0.72);
-      spring(st.y, ty, 0.2, 0.72);
-      spring(st.size, BUBBLE_SIZE * grown, 0.16, 0.72);
+      glide(st.x, tx, 0.35);
+      glide(st.y, ty, 0.35);
+      glide(st.size, BUBBLE_SIZE * grown, 0.3);
       st.opacity = lerp(st.opacity, st.inside && grown > 0.1 ? 1 : 0, 0.3);
 
       st.spotO = lerp(st.spotO, near ? 1 - grown : 0, 0.25);
-      spring(st.spotX, st.mx, 0.12, 0.8);
-      spring(st.spotY, st.my, 0.12, 0.8);
+      glide(st.spotX, st.mx, 0.3);
+      glide(st.spotY, st.my, 0.3);
       if (near) st.spotR = lerp(st.spotR, clamp(Math.min(near.box.hw, near.box.hh) * 0.7, 22, 48), 0.2);
 
       render();
