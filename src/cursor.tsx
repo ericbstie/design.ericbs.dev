@@ -3,12 +3,9 @@ import { LiquidGlass, Noise } from "./components";
 
 
 const HIGHLIGHT_SELECTOR = "[data-glass-highlight]";
-const SVG_NS = "http://www.w3.org/2000/svg";
 
 const WAKE_RANGE = 64;
 const ENGAGE_RANGE = 44;
-const BULGE_REACH = 42;
-const BULGE_AMP = 13;
 const BUBBLE_SIZE = 30;
 
 function lerp(a: number, b: number, t: number) {
@@ -77,59 +74,43 @@ export function surfacePoint(b: Box, x: number, y: number) {
 }
 
 
-type Sample = { x: number; y: number; nx: number; ny: number };
-
-function edgeSamples(x1: number, y1: number, x2: number, y2: number, nx: number, ny: number): Sample[] {
+function edgePoints(x1: number, y1: number, x2: number, y2: number) {
   const len = Math.hypot(x2 - x1, y2 - y1);
-  if (len < 0.5) return [];
+  if (len < 0.5) return [] as { x: number; y: number }[];
 
   const n = Math.max(1, Math.ceil(len / 8));
-  return Array.from({ length: n }, (_, i) => ({ x: lerp(x1, x2, i / n), y: lerp(y1, y2, i / n), nx, ny }));
+  return Array.from({ length: n }, (_, i) => ({ x: lerp(x1, x2, i / n), y: lerp(y1, y2, i / n) }));
 }
 
-function arcSamples(cx: number, cy: number, r: number, a1: number, a2: number): Sample[] {
-  if (r < 0.5) return [];
+function arcPoints(cx: number, cy: number, r: number, a1: number, a2: number) {
+  if (r < 0.5) return [] as { x: number; y: number }[];
 
   const n = Math.max(4, Math.ceil(Math.abs(a2 - a1) * r / 8));
   return Array.from({ length: n }, (_, i) => {
     const a = lerp(a1, a2, i / n);
-    return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r, nx: Math.cos(a), ny: Math.sin(a) };
+    return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
   });
 }
 
-export function perimeterSamples(b: Box): Sample[] {
+export function perimeter(b: Box) {
   const w = b.hw - b.r;
   const h = b.hh - b.r;
   const HPI = Math.PI / 2;
 
   return [
-    ...edgeSamples(b.cx - w, b.cy - b.hh, b.cx + w, b.cy - b.hh, 0, -1),
-    ...arcSamples(b.cx + w, b.cy - h, b.r, -HPI, 0),
-    ...edgeSamples(b.cx + b.hw, b.cy - h, b.cx + b.hw, b.cy + h, 1, 0),
-    ...arcSamples(b.cx + w, b.cy + h, b.r, 0, HPI),
-    ...edgeSamples(b.cx + w, b.cy + b.hh, b.cx - w, b.cy + b.hh, 0, 1),
-    ...arcSamples(b.cx - w, b.cy + h, b.r, HPI, Math.PI),
-    ...edgeSamples(b.cx - b.hw, b.cy + h, b.cx - b.hw, b.cy - h, -1, 0),
-    ...arcSamples(b.cx - w, b.cy - h, b.r, Math.PI, Math.PI + HPI),
+    ...edgePoints(b.cx - w, b.cy - b.hh, b.cx + w, b.cy - b.hh),
+    ...arcPoints(b.cx + w, b.cy - h, b.r, -HPI, 0),
+    ...edgePoints(b.cx + b.hw, b.cy - h, b.cx + b.hw, b.cy + h),
+    ...arcPoints(b.cx + w, b.cy + h, b.r, 0, HPI),
+    ...edgePoints(b.cx + w, b.cy + b.hh, b.cx - w, b.cy + b.hh),
+    ...arcPoints(b.cx - w, b.cy + h, b.r, HPI, Math.PI),
+    ...edgePoints(b.cx - b.hw, b.cy + h, b.cx - b.hw, b.cy - h),
+    ...arcPoints(b.cx - w, b.cy - h, b.r, Math.PI, Math.PI + HPI),
   ];
 }
 
-
-type Bump = { x: number; y: number; amp: number; width: number };
-
-function displace(s: Sample, bump: Bump): { x: number; y: number } {
-  const q = Math.hypot(s.x - bump.x, s.y - bump.y) / bump.width;
-  const t = smooth(1 - q * q);
-
-  return { x: s.x + s.nx * bump.amp * t, y: s.y + s.ny * bump.amp * t };
-}
-
-export function bulgePath(b: Box, bump: Bump | null) {
-  const pts = bump && bump.amp > 0.05 ? perimeterSamples(b).map(s => displace(s, bump)) : perimeterSamples(b);
-  return toPathD(pts);
-}
-
-function toPathD(pts: { x: number; y: number }[]) {
+export function outlinePath(b: Box) {
+  const pts = perimeter(b);
   const n = pts.length;
 
   const curves = pts.map((p1, i) => {
@@ -149,47 +130,7 @@ function toPathD(pts: { x: number; y: number }[]) {
 }
 
 
-type Shell = {
-  el: HTMLElement;
-  box: Box;
-  d: number;
-  g: SVGGElement;
-  sliver: SVGPathElement;
-  rimW: SVGPathElement;
-  rimB: SVGPathElement;
-  fade: number;
-  amp: Glide;
-  bx: number;
-  by: number;
-  pathD: string | null;
-  seen: boolean;
-};
-
-function svgEl<T extends SVGElement>(tag: string, className = "") {
-  const node = document.createElementNS(SVG_NS, tag) as T;
-  if (className) node.setAttribute("class", className);
-  return node;
-}
-
-function createShell(el: HTMLElement, box: Box, layer: SVGGElement): Shell {
-  const g = svgEl<SVGGElement>("g");
-  const sliver = svgEl<SVGPathElement>("path", "morph-sliver");
-  const rimW = svgEl<SVGPathElement>("path", "morph-rim morph-rim-white");
-  const rimB = svgEl<SVGPathElement>("path", "morph-rim morph-rim-black");
-
-  sliver.setAttribute("fill-rule", "evenodd");
-  g.append(sliver, rimW, rimB);
-  g.style.opacity = "0";
-  layer.append(g);
-
-  const sp = surfacePoint(box, box.cx, box.cy - box.hh);
-  return { el, box, d: WAKE_RANGE, g, sliver, rimW, rimB, fade: 0, amp: { x: 0, v: 0 }, bx: sp.x, by: sp.y, pathD: null, seen: true };
-}
-
-function disposeShell(shell: Shell) {
-  shell.el.style.removeProperty("--rim-fade");
-  shell.g.remove();
-}
+type Shell = { el: HTMLElement; box: Box; d: number; fade: number; path: string; seen: boolean };
 
 
 export function SiteCursor() {
@@ -200,12 +141,10 @@ export function SiteCursor() {
   const boostRef = useRef<SVGGElement>(null);
   const clipRef = useRef<SVGPathElement>(null);
   const boostClipRef = useRef<SVGPathElement>(null);
-  const shellLayerRef = useRef<SVGGElement>(null);
 
   const s = useRef({
     mx: -100, my: -100, inside: false,
-    x: { x: -100, v: -100 }, y: { x: -100, v: -100 }, size: { x: BUBBLE_SIZE, v: BUBBLE_SIZE },
-    opacity: 0, stretch: 0, angle: 0,
+    x: { x: -100, v: -100 }, y: { x: -100, v: -100 }, size: { x: BUBBLE_SIZE, v: BUBBLE_SIZE }, opacity: 0,
     spotX: { x: -100, v: -100 }, spotY: { x: -100, v: -100 }, spotO: 0, spotR: 26,
     boostEl: null as HTMLElement | null, boostO: 0,
     shells: new Map<HTMLElement, Shell>(),
@@ -236,8 +175,8 @@ export function SiteCursor() {
         const d = signedDistance(box, st.mx, st.my);
         if (d >= WAKE_RANGE && !st.shells.has(el)) continue;
 
-        const shell = st.shells.get(el) ?? createShell(el, box, shellLayerRef.current!);
-        Object.assign(shell, { box, d, seen: true });
+        const shell = st.shells.get(el) ?? { el, box, d, fade: 0, path: "", seen: true };
+        Object.assign(shell, { box, d, path: outlinePath(box), seen: true });
         st.shells.set(el, shell);
       }
     }
@@ -249,7 +188,7 @@ export function SiteCursor() {
 
     function updateBoost(shells: Shell[]) {
       const inner = shells
-        .filter(sh => sh.seen && sh.d < 0 && sh.pathD)
+        .filter(sh => sh.seen && sh.d < 0)
         .reduce<Shell | null>((a, sh) => (!a || sh.d > a.d ? sh : a), null);
 
       const match = (inner?.el ?? null) === st.boostEl;
@@ -257,58 +196,23 @@ export function SiteCursor() {
       if (!match && st.boostO < 0.05) st.boostEl = inner?.el ?? null;
 
       const boostShell = st.boostEl ? st.shells.get(st.boostEl) : null;
-      boostClipRef.current!.setAttribute("d", boostShell?.pathD ?? "M0 0Z");
-    }
-
-    function updateShell(shell: Shell) {
-      const engaged = shell.seen && shell.d < ENGAGE_RANGE;
-      shell.fade = lerp(shell.fade, engaged ? 1 : 0, 0.22);
-
-      let ampT = 0;
-      if (engaged) {
-        const reach = shell.d < 0 ? Math.min(BULGE_REACH, Math.min(shell.box.hw, shell.box.hh) * 0.8) : BULGE_REACH;
-        ampT = BULGE_AMP * smooth(1 - Math.abs(shell.d) / reach);
-        if (shell.d > 0) ampT = Math.min(ampT, shell.d);
-      }
-
-      glide(shell.amp, ampT, 0.3);
-
-      if (shell.seen) {
-        const sp = surfacePoint(shell.box, st.mx, st.my);
-        const jump = Math.hypot(sp.x - shell.bx, sp.y - shell.by) > 70;
-
-        shell.bx = jump ? sp.x : lerp(shell.bx, sp.x, 0.35);
-        shell.by = jump ? sp.y : lerp(shell.by, sp.y, 0.35);
-      }
-
-      shell.el.style.setProperty("--rim-fade", String(1 - shell.fade));
-      shell.g.style.opacity = String(shell.fade);
-      shell.pathD = null;
-
-      if (shell.fade > 0.005) {
-        const amp = Math.max(shell.amp.x, 0);
-        const width = Math.min(clamp(amp * 4.5, 44, 90), Math.min(shell.box.hw, shell.box.hh) * 2);
-        const d = bulgePath(shell.box, { x: shell.bx, y: shell.by, amp, width });
-
-        shell.rimW.setAttribute("d", d);
-        shell.rimB.setAttribute("d", d);
-        shell.sliver.setAttribute("d", d + bulgePath(shell.box, null));
-        shell.pathD = d;
-      }
+      boostClipRef.current!.setAttribute("d", boostShell?.path ?? "M0 0Z");
     }
 
     function step() {
       wakeShells();
 
       const shells = [...st.shells.values()];
-      shells.forEach(updateShell);
-      clipRef.current!.setAttribute("d", shells.map(sh => sh.pathD).filter(Boolean).join("") || "M0 0Z");
+      for (const shell of shells) {
+        const engaged = shell.seen && shell.d < ENGAGE_RANGE;
+        shell.fade = lerp(shell.fade, engaged ? 1 : 0, 0.22);
+      }
+
+      const clip = shells.filter(sh => sh.fade > 0.02).map(sh => sh.path);
+      clipRef.current!.setAttribute("d", clip.join("") || "M0 0Z");
 
       for (const [el, shell] of st.shells) {
-        if (!shell.seen && shell.fade < 0.02) {
-          disposeShell(shell);
-          st.shells.delete(el);
-        }
+        if (!shell.seen && shell.fade < 0.02) st.shells.delete(el);
       }
 
       updateBoost(shells);
@@ -316,21 +220,8 @@ export function SiteCursor() {
       const dMin = near ? near.d : Infinity;
       const grown = near ? smooth(dMin / ENGAGE_RANGE) : 1;
 
-      let tx = st.mx;
-      let ty = st.my;
-
-      if (near && dMin >= 0 && dMin < ENGAGE_RANGE) {
-        const sp = surfacePoint(near.box, st.mx, st.my);
-        tx = lerp(st.mx, sp.x + sp.nx * Math.max(near.amp.x, 0), 1 - grown);
-        ty = lerp(st.my, sp.y + sp.ny * Math.max(near.amp.x, 0), 1 - grown);
-        st.angle = Math.atan2(sp.ny, sp.nx);
-      }
-
-      const stretchT = near && dMin >= 0 ? smooth(1 - dMin / 44) * 0.6 : 0;
-      st.stretch = lerp(st.stretch, stretchT, 0.25);
-
-      glide(st.x, tx, 0.35);
-      glide(st.y, ty, 0.35);
+      glide(st.x, st.mx, 0.35);
+      glide(st.y, st.my, 0.35);
       glide(st.size, BUBBLE_SIZE * grown, 0.3);
       st.opacity = lerp(st.opacity, st.inside && grown > 0.1 ? 1 : 0, 0.3);
 
@@ -345,14 +236,12 @@ export function SiteCursor() {
 
     function render() {
       const size = Math.max(st.size.x, 0);
-      const len = size * (1 + st.stretch);
-      const girth = size * (1 - st.stretch * 0.35);
 
       const bub = bubRef.current!.style;
-      bub.width = len + "px";
-      bub.height = girth + "px";
-      bub.borderRadius = girth / 2 + "px";
-      bub.transform = `translateZ(0) translate(${st.x.x - len / 2}px,${st.y.x - girth / 2}px) rotate(${st.angle}rad)`;
+      bub.width = size + "px";
+      bub.height = size + "px";
+      bub.borderRadius = size / 2 + "px";
+      bub.transform = `translateZ(0) translate(${st.x.x - size / 2}px,${st.y.x - size / 2}px)`;
       bub.opacity = String(st.opacity);
 
       for (const spot of [spotARef.current!, spotBRef.current!]) {
@@ -369,7 +258,6 @@ export function SiteCursor() {
 
     return () => {
       cancelAnimationFrame(raf);
-      for (const shell of st.shells.values()) disposeShell(shell);
       st.shells.clear();
       window.removeEventListener("mousemove", onMouseMove);
       document.documentElement.removeEventListener("mouseleave", onMouseLeave);
@@ -380,20 +268,6 @@ export function SiteCursor() {
     <>
       <svg className="morph-overlay" aria-hidden>
         <defs>
-          <linearGradient id="morph-rim-white" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#fff" stopOpacity="0.55" />
-            <stop offset="30%" stopColor="#fff" stopOpacity="0.12" />
-            <stop offset="55%" stopColor="#fff" stopOpacity="0.03" />
-            <stop offset="80%" stopColor="#fff" stopOpacity="0.08" />
-            <stop offset="100%" stopColor="#fff" stopOpacity="0.28" />
-          </linearGradient>
-          <linearGradient id="morph-rim-black" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#000" stopOpacity="0.8" />
-            <stop offset="30%" stopColor="#000" stopOpacity="0.3" />
-            <stop offset="55%" stopColor="#000" stopOpacity="0.15" />
-            <stop offset="80%" stopColor="#000" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="#000" stopOpacity="0.55" />
-          </linearGradient>
           <radialGradient id="morph-spot">
             <stop offset="0%" className="spot-core" />
             <stop offset="55%" className="spot-mid" />
@@ -409,7 +283,6 @@ export function SiteCursor() {
             <path ref={boostClipRef} />
           </clipPath>
         </defs>
-        <g ref={shellLayerRef} />
         <g ref={ambientRef} clipPath="url(#morph-clip)" style={{ opacity: 0 }}>
           <circle ref={spotARef} r="26" fill="url(#morph-spot)" filter="url(#morph-spot-blur)" />
         </g>

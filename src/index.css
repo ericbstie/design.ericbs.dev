@@ -126,14 +126,14 @@ h1 {
   transition: opacity 0.45s ease;
 }
 .rim-white {
-  opacity: calc(var(--rim-white) * var(--rim-fade, 1));
+  opacity: var(--rim-white);
   background: linear-gradient(180deg,
     rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 30%,
     rgba(255, 255, 255, 0.03) 55%, rgba(255, 255, 255, 0.08) 80%,
     rgba(255, 255, 255, 0.28) 100%);
 }
 .rim-black {
-  opacity: calc(var(--rim-black) * var(--rim-fade, 1));
+  opacity: var(--rim-black);
   background: linear-gradient(180deg,
     rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.3) 30%,
     rgba(0, 0, 0, 0.15) 55%, rgba(0, 0, 0, 0.22) 80%,
@@ -211,6 +211,8 @@ h1 {
   box-sizing: border-box;
   pointer-events: none;
   opacity: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .morph-overlay {
@@ -222,21 +224,11 @@ h1 {
   pointer-events: none;
 }
 
-.morph-rim {
-  fill: none;
-  stroke-width: 1.2;
-  transition: opacity 0.45s ease;
-}
-.morph-sliver {
-  fill: var(--glass-bg);
-}
-.morph-rim-white {
-  stroke: url(#morph-rim-white);
-  opacity: var(--rim-white);
-}
-.morph-rim-black {
-  stroke: url(#morph-rim-black);
-  opacity: var(--rim-black);
+@media (hover: none), (pointer: coarse) {
+  .bubble,
+  .morph-overlay {
+    display: none;
+  }
 }
 
 .spot-core {
