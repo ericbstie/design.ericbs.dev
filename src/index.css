@@ -206,3 +206,20 @@ h1 {
   pointer-events: none;
   opacity: 0;
 }
+
+.cursor-stage {
+  user-select: none;
+}
+
+.bubble-local {
+  position: absolute;
+  z-index: 1;
+}
+
+.target {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
