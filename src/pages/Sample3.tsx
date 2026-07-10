@@ -58,6 +58,7 @@ export function Sample3() {
           </div>
           <div className="chat-composer">
             <TextArea
+              name="message"
               aria-label="Message Aurora"
               placeholder="Message Aurora…"
               rows={2}

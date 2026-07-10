@@ -308,6 +308,7 @@ export function Docs({ glass, onToggle }: { glass: Theme; onToggle: ToggleFn }) 
         <p>Glass components for the web — frosted surfaces, soft rims, and living color. Every component adapts to light and dark, works with touch and cursor, and stays readable over any backdrop.</p>
         <Input
           type="search"
+          name="component-search"
           aria-label="Search components"
           placeholder={`Search ${DEMOS.length} components…`}
           value={query}
