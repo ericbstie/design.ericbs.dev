@@ -8,8 +8,8 @@ export type ToggleFn = (x: number, y: number) => void;
 export const COLORS: Record<Theme, string> = { dark: "#131310", light: "#eeeae4" };
 
 export const MODE: Record<Theme, { blend: CSSProperties["mixBlendMode"]; op: number }> = {
-  dark: { blend: "screen", op: 0.55 },
-  light: { blend: "multiply", op: 0.85 },
+  dark: { blend: "screen", op: 0.4 },
+  light: { blend: "multiply", op: 0.6 },
 };
 
 function lerp(a: number, b: number, t: number) {
@@ -93,6 +93,15 @@ export function LiquidGlass({
   );
 }
 
+export function Button({ children }: { children: ReactNode }) {
+  return (
+    <button className="liquid-glass button">
+      <Rim />
+      {children}
+    </button>
+  );
+}
+
 
 export function ThemeIcon({ glass }: { glass: Theme }) {
   return (
@@ -146,7 +155,7 @@ export function Ripple({ x, y, theme, onEnd }: { x: number; y: number; theme: Th
 }
 
 
-export function CursorStage({ glass, onToggle }: { glass: Theme; onToggle: ToggleFn }) {
+export function GlassCursor({ glass, onToggle }: { glass: Theme; onToggle: ToggleFn }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const bubRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -217,7 +226,6 @@ export function CursorStage({ glass, onToggle }: { glass: Theme; onToggle: Toggl
 
   return (
     <div ref={stageRef} className="stage cursor-stage" onMouseMove={onMouseMove} onMouseLeave={onMouseLeave} onClick={onClick}>
-      <Blobs />
       <LiquidGlass ref={bubRef} className="bubble">
         <Noise />
       </LiquidGlass>

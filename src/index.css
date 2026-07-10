@@ -5,30 +5,26 @@
   color-scheme: dark;
   --base: #131310;
   --blob-blend: screen;
-  --blob-op: 0.55;
+  --blob-op: 0.4;
 }
 :root[data-theme="light"] {
   color-scheme: light;
   --base: #eeeae4;
   --blob-blend: multiply;
-  --blob-op: 0.85;
+  --blob-op: 0.6;
 }
 :root[data-glass="dark"] {
   --glass-bg: rgba(255, 255, 255, 0.05);
   --rim-white: 1;
   --rim-black: 0;
-  --stage: #131310;
-  --stage-blend: screen;
-  --stage-op: 0.55;
+  --frame: rgba(0, 0, 0, 0.45);
   --text: #fff;
 }
 :root[data-glass="light"] {
   --glass-bg: rgba(255, 255, 255, 0.22);
   --rim-white: 0;
   --rim-black: 1;
-  --stage: #eeeae4;
-  --stage-blend: multiply;
-  --stage-op: 0.85;
+  --frame: rgba(255, 255, 255, 0.45);
   --text: #131310;
 }
 
@@ -37,7 +33,7 @@ body {
   min-height: 100vh;
   background: var(--base);
   color: var(--text);
-  font-family: system-ui, sans-serif;
+  font-family: "Nunito Sans", system-ui, sans-serif;
   transition: color 0.45s ease;
 }
 
@@ -53,8 +49,8 @@ body {
   inset: -15%;
   filter: blur(34px);
   will-change: transform;
-  mix-blend-mode: var(--stage-blend);
-  opacity: var(--stage-op);
+  mix-blend-mode: var(--blob-blend);
+  opacity: var(--blob-op);
   pointer-events: none;
   transition: opacity 0.45s ease;
 }
@@ -80,8 +76,15 @@ main {
   padding: 3rem 1.5rem;
 }
 
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
 h1 {
-  margin: 0 0 2rem;
+  margin: 0;
   font-size: 3rem;
   font-weight: 500;
   transition: color 0.45s ease;
@@ -140,12 +143,6 @@ h1 {
   background: var(--noise);
 }
 
-.noise-swatch {
-  position: absolute;
-  inset: 0;
-  background: var(--noise);
-}
-
 .card {
   border-radius: 12px;
   padding: 0.5rem;
@@ -162,33 +159,23 @@ h1 {
   height: 160px;
   border-radius: 12px;
   overflow: hidden;
-  background: var(--stage);
+  background: var(--frame);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
   transition: background 0.45s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.half {
-  position: relative;
-  flex: 1;
-  height: 100%;
-  display: grid;
-  place-items: center;
-}
-
-.chip {
-  position: relative;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-}
-
-.pill {
-  position: relative;
-  width: 120px;
-  height: 48px;
+.button {
+  border: none;
   border-radius: 24px;
+  padding: 0.75rem 1.75rem;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.45s ease, color 0.45s ease;
 }
 
 .theme-toggle {

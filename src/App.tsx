@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Blobs, CursorStage, LiquidGlass, Noise, Ripple, ThemeToggle, type Theme } from "./components";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Blobs, Button, GlassCursor, LiquidGlass, Ripple, ThemeToggle, type Theme } from "./components";
 import "./index.css";
 
 
 type RippleState = { id: number; x: number; y: number; theme: Theme };
-
-const pageBlobStyle: CSSProperties = { mixBlendMode: "var(--blob-blend)" as never, opacity: "var(--blob-op)" };
 
 
 function Card({ label, children, stage }: { label: string; children?: ReactNode; stage?: ReactNode }) {
@@ -14,16 +12,6 @@ function Card({ label, children, stage }: { label: string; children?: ReactNode;
       {stage ?? <div className="stage">{children}</div>}
       <div className="card-label">{label}</div>
     </LiquidGlass>
-  );
-}
-
-function RimHalf({ base, rim }: { base: string; rim: "rim-white" | "rim-black" }) {
-  return (
-    <div className="half" style={{ background: base }}>
-      <div className="chip">
-        <div className={`rim ${rim}`} style={{ opacity: 1 }} />
-      </div>
-    </div>
   );
 }
 
@@ -57,39 +45,21 @@ export function App() {
   return (
     <>
       <div className="page-bg">
-        <Blobs style={pageBlobStyle} />
+        <Blobs />
       </div>
       {ripples.map(r => (
         <Ripple key={r.id} x={r.x} y={r.y} theme={r.theme} onEnd={() => onRippleEnd(r)} />
       ))}
       <main>
-        <h1>Components</h1>
+        <header>
+          <h1>Components</h1>
+          <ThemeToggle glass={glass} onToggle={toggleTheme} />
+        </header>
         <div className="grid">
-          <Card label="Liquid glass">
-            <Blobs />
-            <LiquidGlass className="pill">
-              <Noise />
-            </LiquidGlass>
+          <Card label="Button">
+            <Button>Button</Button>
           </Card>
-          <Card
-            label="Rim"
-            stage={
-              <div className="stage">
-                <RimHalf base="#131310" rim="rim-white" />
-                <RimHalf base="#eeeae4" rim="rim-black" />
-              </div>
-            }
-          />
-          <Card label="Blobs">
-            <Blobs />
-          </Card>
-          <Card label="Noise">
-            <div className="noise-swatch" />
-          </Card>
-          <Card label="Theme toggle">
-            <ThemeToggle glass={glass} onToggle={toggleTheme} />
-          </Card>
-          <Card label="Cursor" stage={<CursorStage glass={glass} onToggle={toggleTheme} />} />
+          <Card label="GlassCursor" stage={<GlassCursor glass={glass} onToggle={toggleTheme} />} />
         </div>
       </main>
     </>
