@@ -54,7 +54,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div className="ui-toaster" role="status" aria-live="polite">
         {toasts.map(t => (
           <div key={t.id} className="ui-toast">
-            <span className={`ui-toast-dot ${t.variant === "default" ? "" : `ui-toast-dot-${t.variant}`}`} />
+            <span className={`ui-toast-dot ${t.variant === "default" ? "" : `ui-toast-dot-${t.variant}`}`} aria-hidden="true" />
             {t.message}
           </div>
         ))}

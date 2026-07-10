@@ -138,6 +138,7 @@ export function Select({ options, value, onChange, placeholder = "Select…", id
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
+        aria-activedescendant={open && nav.active >= 0 ? `${listId}-${nav.active}` : undefined}
         onClick={() => setOpen(!open)}
         onKeyDown={open ? nav.onKeyDown : undefined}
       >
@@ -150,6 +151,7 @@ export function Select({ options, value, onChange, placeholder = "Select…", id
             {options.map((o, i) => (
               <li
                 key={o.value}
+                id={`${listId}-${i}`}
                 className="ui-option"
                 role="option"
                 aria-selected={o.value === value}
@@ -196,6 +198,7 @@ export function MultiSelect({ options, value, onChange, placeholder = "Select…
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
+        aria-activedescendant={open && nav.active >= 0 ? `${listId}-${nav.active}` : undefined}
         onClick={() => setOpen(!open)}
         onKeyDown={open ? nav.onKeyDown : undefined}
       >
@@ -216,6 +219,7 @@ export function MultiSelect({ options, value, onChange, placeholder = "Select…
             {options.map((o, i) => (
               <li
                 key={o.value}
+                id={`${listId}-${i}`}
                 className="ui-option"
                 role="option"
                 aria-selected={value.includes(o.value)}
@@ -276,7 +280,7 @@ export function FileUpload({ label = "Drop files here or click to browse", multi
   function addFiles(list: FileList | null) {
     if (!list?.length) return;
 
-    const next = multiple ? [...files, ...list] : [...list];
+    const next = multiple ? [...files, ...list] : [list[0]!];
     setFiles(next);
     onFiles?.(next);
   }
@@ -317,7 +321,7 @@ export function FileUpload({ label = "Drop files here or click to browse", multi
         <ul className="ui-fileupload-list">
           {files.map((f, i) => (
             <li key={`${f.name}-${i}`}>
-              <Tag variant="accent" onRemove={() => removeFile(i)}>{f.name}</Tag>
+              <Tag variant="accent" onRemove={() => removeFile(i)} removeLabel={`Remove ${f.name}`}>{f.name}</Tag>
             </li>
           ))}
         </ul>

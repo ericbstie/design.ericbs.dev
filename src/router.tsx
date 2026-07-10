@@ -20,8 +20,10 @@ export function Router({ children }: { children: (path: string) => React.ReactNo
     if (to === window.location.pathname) return;
 
     window.history.pushState(null, "", to);
-    transitionTo(() => setPath(to));
-    window.scrollTo(0, 0);
+    transitionTo(() => {
+      setPath(to);
+      window.scrollTo(0, 0);
+    });
   }, []);
 
   useEffect(() => {
@@ -43,6 +45,7 @@ export function RouteLink({ to, onClick, ...rest }: { to: string } & AnchorHTMLA
   function handleClick(e: MouseEvent<HTMLAnchorElement>) {
     onClick?.(e);
     if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    if (e.currentTarget.target || e.currentTarget.hasAttribute("download")) return;
 
     e.preventDefault();
     navigate(to);

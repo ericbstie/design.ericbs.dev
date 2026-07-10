@@ -62,16 +62,17 @@ export function Label({ htmlFor, children }: { htmlFor?: string; children: React
 
 export type TagVariant = "default" | "accent" | "success" | "danger";
 
-export function Tag({ variant = "default", onRemove, children }: {
+export function Tag({ variant = "default", onRemove, removeLabel = "Remove", children }: {
   variant?: TagVariant;
   onRemove?: () => void;
+  removeLabel?: string;
   children: ReactNode;
 }) {
   return (
     <span className={`ui-tag ${variant === "default" ? "" : `ui-tag-${variant}`}`}>
       {children}
       {onRemove && (
-        <button className="ui-tag-remove ui-focusable" aria-label="Remove" onClick={onRemove}>
+        <button className="ui-tag-remove" aria-label={removeLabel} onClick={onRemove}>
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 3l6 6M9 3l-6 6" /></svg>
         </button>
       )}
