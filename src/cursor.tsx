@@ -192,7 +192,7 @@ export function SiteCursor() {
     mx: -100, my: -100, inside: false, overClickable: false,
     x: { x: -100, v: -100 }, y: { x: -100, v: -100 }, w: { x: BUBBLE_SIZE, v: BUBBLE_SIZE }, h: { x: BUBBLE_SIZE, v: BUBBLE_SIZE }, opacity: 0,
     spotX: { x: -100, v: -100 }, spotY: { x: -100, v: -100 }, spotO: 0, spotR: 12,
-    refract: 0, clickEl: null as HTMLElement | null, refractBox: { x: -100, y: -100, w: 0, h: 0, r: 0 },
+    refract: 0,
     boostEl: null as HTMLElement | null, boostO: 0,
     snap: null as HTMLElement | null,
     shells: new Map<HTMLElement, Shell>(),
@@ -204,9 +204,9 @@ export function SiteCursor() {
     function onMouseMove(e: globalThis.MouseEvent) {
       const target = e.target instanceof Element ? e.target : null;
       const local = target?.closest(LOCAL_SELECTOR);
-      const clickEl = local ? null : (target?.closest(CLICKABLE_SELECTOR) as HTMLElement | null);
+      const overClickable = !local && !!target?.closest(CLICKABLE_SELECTOR);
 
-      Object.assign(st, { mx: e.clientX, my: e.clientY, inside: !local, overClickable: !!clickEl, clickEl });
+      Object.assign(st, { mx: e.clientX, my: e.clientY, inside: !local, overClickable });
     }
 
     function onMouseLeave() {
@@ -272,6 +272,7 @@ export function SiteCursor() {
       const dMin = near ? near.d : Infinity;
       const grown = near ? smooth(dMin / ENGAGE_RANGE) : 1;
       const onGlass = !!near && dMin < ENGAGE_RANGE;
+      const morphing = onGlass && !st.overClickable;
 
       st.snap = st.inside && !onGlass ? findSnapTarget(st.mx, st.my, st.snap) : null;
 
@@ -293,7 +294,7 @@ export function SiteCursor() {
         tw = b.w + 12;
         th = b.h - 4;
         ease = 0.28;
-      } else if (onGlass) {
+      } else if (morphing) {
         tw = th = BUBBLE_SIZE * grown;
       }
 
@@ -301,19 +302,13 @@ export function SiteCursor() {
       glide(st.y, ty, ease);
       glide(st.w, tw, 0.25);
       glide(st.h, th, 0.25);
-      st.opacity = lerp(st.opacity, st.inside && (!onGlass || grown > 0.1) ? 1 : 0, 0.3);
+      st.opacity = lerp(st.opacity, st.inside && (!morphing || grown > 0.1) ? 1 : 0, 0.3);
 
       st.spotO = lerp(st.spotO, near ? 1 - grown : 0, 0.25);
       glide(st.spotX, st.mx, 0.3);
       glide(st.spotY, st.my, 0.3);
       if (near) st.spotR = lerp(st.spotR, clamp(Math.min(near.box.hw, near.box.hh) * 0.35, 8, 16), 0.2);
 
-      const el = st.clickEl;
-      if (el?.isConnected) {
-        const rc = el.getBoundingClientRect();
-        const radius = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0;
-        st.refractBox = { x: rc.left, y: rc.top, w: rc.width, h: rc.height, r: Math.min(radius, rc.width / 2, rc.height / 2) };
-      }
       st.refract = lerp(st.refract, st.inside && st.overClickable ? 1 : 0, 0.16);
 
       render();
@@ -343,13 +338,12 @@ export function SiteCursor() {
       ambientRef.current!.style.opacity = String(st.spotO * 0.45);
       boostRef.current!.style.opacity = String(st.spotO * 0.55 * st.boostO);
 
-      const rb = st.refractBox;
       const rf = refractRef.current!.style;
-      rf.transform = `translate(${rb.x}px,${rb.y}px)`;
-      rf.width = rb.w + "px";
-      rf.height = rb.h + "px";
-      rf.borderRadius = rb.r + "px";
-      rf.opacity = String(st.refract * REFRACT_MAX);
+      rf.transform = `translate(${st.x.x - w / 2}px,${st.y.x - h / 2}px)`;
+      rf.width = w + "px";
+      rf.height = h + "px";
+      rf.borderRadius = h / 2 + "px";
+      rf.opacity = String(st.refract * REFRACT_MAX * st.opacity);
     }
 
     let raf = requestAnimationFrame(step);

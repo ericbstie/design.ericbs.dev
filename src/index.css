@@ -379,12 +379,13 @@ h1 {
 }
 
 /* Glass refraction — a nacreous diagonal sweep (top-right → bottom-left),
-   shown over anything clickable. Barely-visible mother-of-pearl iridescence. */
+   shown on the cursor bubble while hovering anything clickable.
+   Barely-visible mother-of-pearl iridescence. */
 .refract {
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 999;
+  z-index: 1001;
   pointer-events: none;
   overflow: hidden;
   opacity: 0;
