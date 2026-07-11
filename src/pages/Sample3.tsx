@@ -52,7 +52,14 @@ export function Sample3() {
             {messages.map(m => (
               <div key={m.id} className={`chat-bubble chat-${m.from}`}>{m.text}</div>
             ))}
-            {thinking && <ChatShimmer label="Aurora is thinking…" lines={2} />}
+            {thinking && (
+              <div className="chat-typing">
+                <span className="chat-typing-avatar" aria-hidden="true" />
+                <div className="chat-typing-body">
+                  <ChatShimmer lines={2} label="Aurora is thinking…" />
+                </div>
+              </div>
+            )}
           </div>
           <div className="chat-composer">
             <TextArea

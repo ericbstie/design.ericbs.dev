@@ -33,7 +33,7 @@ function unlockFocus(root: HTMLElement) {
 }
 
 
-function Demo({ label, children, tall }: { label: string; children: ReactNode; tall?: boolean }) {
+function Demo({ label, children }: { label: string; children: ReactNode }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [entered, setEntered] = useState(false);
 
@@ -77,8 +77,8 @@ function Demo({ label, children, tall }: { label: string; children: ReactNode; t
       onKeyDown={onKeyDown}
       onBlur={onBlur}
     >
-      <div className={`demo-stage ${tall ? "demo-stage-tall" : ""}`}>{children}</div>
-      <div className="card-label">{label}</div>
+      <div className="card-title">{label}</div>
+      <div className="demo-stage">{children}</div>
     </LiquidGlass>
   );
 }
@@ -335,7 +335,7 @@ function ChatShimmerDemo() {
 }
 
 
-const DEMOS: { name: string; render: (glass: Theme, onToggle: ToggleFn) => ReactNode; tall?: boolean }[] = [
+const DEMOS: { name: string; render: (glass: Theme, onToggle: ToggleFn) => ReactNode }[] = [
   { name: "Button", render: () => <ButtonDemo /> },
   { name: "Card", render: () => <CardDemo /> },
   { name: "Input", render: () => <InputDemo /> },
@@ -347,13 +347,13 @@ const DEMOS: { name: string; render: (glass: Theme, onToggle: ToggleFn) => React
   { name: "Tooltip", render: () => <TooltipDemo /> },
   { name: "Toast", render: () => <ToastDemo /> },
   { name: "Progress", render: () => <ProgressDemo /> },
-  { name: "Table", render: () => <TableDemo />, tall: true },
+  { name: "Table", render: () => <TableDemo /> },
   { name: "Skeleton", render: () => <SkeletonDemo /> },
   { name: "Time picker", render: () => <TimePickerDemo /> },
   { name: "Date picker", render: () => <DatePickerDemo /> },
   { name: "Toggle", render: () => <ToggleDemo /> },
   { name: "Radio group", render: () => <RadioGroupDemo /> },
-  { name: "Form", render: () => <FormDemo />, tall: true },
+  { name: "Form", render: () => <FormDemo /> },
   { name: "File upload", render: () => <FileUploadDemo /> },
   { name: "Timeline", render: () => <TimelineDemo /> },
   { name: "Tree", render: () => <TreeDemo /> },
@@ -384,7 +384,7 @@ export function Docs({ glass, onToggle }: { glass: Theme; onToggle: ToggleFn }) 
       </div>
       <div className="grid">
         {visible.map(d => (
-          <Demo key={d.name} label={d.name} tall={d.tall}>
+          <Demo key={d.name} label={d.name}>
             {d.render(glass, onToggle)}
           </Demo>
         ))}

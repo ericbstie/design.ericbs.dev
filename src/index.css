@@ -223,7 +223,7 @@ h1 {
 
 .demo-stage {
   position: relative;
-  min-height: 160px;
+  height: 200px;
   box-sizing: border-box;
   border-radius: 12px;
   background: var(--frame);
@@ -235,9 +235,8 @@ h1 {
   justify-content: center;
   padding: 1.1rem;
 }
-.demo-stage-tall { min-height: 220px; }
 .demo-stage > * { max-width: 100%; }
-.demo-stage .stage { margin: -1.1rem; max-width: none; }
+.demo-stage .stage { flex: 1; align-self: stretch; height: auto; margin: -1.1rem; max-width: none; }
 
 .demo-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
 .demo-col { display: flex; flex-direction: column; gap: 0.7rem; }
@@ -285,6 +284,10 @@ h1 {
 .chat-you { align-self: flex-end; background: var(--accent-tint); }
 .chat-composer { display: flex; align-items: flex-end; gap: 0.6rem; }
 .chat-composer textarea { flex: 1; }
+
+.chat-typing { display: flex; align-items: center; gap: 0.7rem; }
+.chat-typing-avatar { width: 30px; height: 30px; flex: none; border-radius: 50%; background: var(--accent-tint); }
+.chat-typing-body { flex: 1; min-width: 0; max-width: 65%; }
 
 @media (max-width: 640px) {
   main { padding: 1.5rem 1rem; }
@@ -348,9 +351,11 @@ h1 {
   outline-offset: 3px;
 }
 
-.card-label {
-  padding: 0.75rem 0.5rem 0.5rem;
-  font-size: 0.875rem;
+.card-title {
+  margin: 0.3rem 0.55rem 0.7rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.2;
   transition: color 0.45s ease;
 }
 

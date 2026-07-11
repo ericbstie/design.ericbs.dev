@@ -119,18 +119,17 @@ export function Skeleton({ width, height = 14, radius, style }: {
 }
 
 
+// The shimmer primitive: only the animated "thinking" lines. Any avatar or
+// label around it is presentational scaffolding the consumer composes itself.
+// `label` sets the accessible name of the status region — it is not rendered.
 export function ChatShimmer({ label = "Thinking…", lines = 3 }: { label?: string; lines?: number }) {
   const widths = ["100%", "92%", "64%", "80%", "48%"];
 
   return (
     <div className="ui-chat-shimmer" role="status" aria-label={label}>
-      <span className="ui-shimmer-avatar" aria-hidden="true" />
-      <div className="ui-shimmer-body">
-        <span className="ui-shimmer-label" aria-hidden="true">{label}</span>
-        {Array.from({ length: lines }, (_, i) => (
-          <div key={i} className="ui-shimmer-line" style={{ width: widths[i % widths.length] }} />
-        ))}
-      </div>
+      {Array.from({ length: lines }, (_, i) => (
+        <div key={i} className="ui-shimmer-line" style={{ width: widths[i % widths.length] }} />
+      ))}
     </div>
   );
 }
