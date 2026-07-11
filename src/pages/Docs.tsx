@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
 import { GlassCursor, LiquidGlass, type Theme, type ToggleFn } from "../components";
 import {
   Breadcrumb, Button, Card, ChatShimmer, DatePicker, FileUpload, Field, Form, Input, Label, Link,
@@ -7,9 +7,76 @@ import {
 } from "../ui";
 
 
+const FOCUSABLE = "a[href], button, input, select, textarea, [tabindex]";
+
+function focusablesIn(root: HTMLElement) {
+  return [...root.querySelectorAll<HTMLElement>(FOCUSABLE)];
+}
+
+function lockFocus(root: HTMLElement) {
+  for (const el of focusablesIn(root)) {
+    if (el.dataset.demoTabindex === undefined) el.dataset.demoTabindex = el.getAttribute("tabindex") ?? "none";
+    el.tabIndex = -1;
+  }
+}
+
+function unlockFocus(root: HTMLElement) {
+  for (const el of focusablesIn(root)) {
+    const original = el.dataset.demoTabindex;
+    if (original === undefined) continue;
+
+    if (original === "none") el.removeAttribute("tabindex");
+    else el.setAttribute("tabindex", original);
+
+    delete el.dataset.demoTabindex;
+  }
+}
+
+
 function Demo({ label, children, tall }: { label: string; children: ReactNode; tall?: boolean }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [entered, setEntered] = useState(false);
+
+  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Enter" && !entered && e.target === cardRef.current) setEntered(true);
+
+    if (e.key === "Escape" && entered) {
+      setEntered(false);
+      cardRef.current?.focus();
+    }
+  }
+
+  function onBlur(e: FocusEvent<HTMLDivElement>) {
+    if (entered && !cardRef.current?.contains(e.relatedTarget)) setEntered(false);
+  }
+
+  useEffect(() => {
+    const card = cardRef.current!;
+
+    if (entered) {
+      unlockFocus(card);
+      focusablesIn(card)[0]?.focus();
+      return;
+    }
+
+    lockFocus(card);
+
+    const observer = new MutationObserver(() => lockFocus(card));
+    observer.observe(card, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [entered]);
+
   return (
-    <LiquidGlass className="card" highlight>
+    <LiquidGlass
+      ref={cardRef}
+      className="card"
+      highlight
+      role="group"
+      tabIndex={0}
+      aria-label={`${label} demo — press Enter to interact, Escape to leave`}
+      onKeyDown={onKeyDown}
+      onBlur={onBlur}
+    >
       <div className={`demo-stage ${tall ? "demo-stage-tall" : ""}`}>{children}</div>
       <div className="card-label">{label}</div>
     </LiquidGlass>
@@ -305,7 +372,6 @@ export function Docs({ glass, onToggle }: { glass: Theme; onToggle: ToggleFn }) 
   return (
     <>
       <div className="docs-intro">
-        <p>Glass components for the web — frosted surfaces, soft rims, and living color. Every component adapts to light and dark, works with touch and cursor, and stays readable over any backdrop.</p>
         <Input
           type="search"
           name="component-search"

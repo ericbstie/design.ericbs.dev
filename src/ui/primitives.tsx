@@ -101,7 +101,9 @@ export function Breadcrumb({ items }: { items: { label: ReactNode; href?: string
             <li key={i}>
               {last
                 ? <span aria-current="page">{item.label}</span>
-                : <Link href={item.href ?? "#"}>{item.label}</Link>}
+                : item.href
+                  ? <Link href={item.href}>{item.label}</Link>
+                  : item.label}
               {!last && <span className="ui-breadcrumb-sep" aria-hidden="true">/</span>}
             </li>
           );

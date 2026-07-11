@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type MouseEvent, type ReactNode, type Ref } from "react";
+import { useEffect, useRef, type CSSProperties, type HTMLAttributes, type MouseEvent, type ReactNode, type Ref } from "react";
 
 
 export type Theme = "dark" | "light";
@@ -86,15 +86,16 @@ export function LiquidGlass({
   style,
   highlight,
   children,
+  ...rest
 }: {
   ref?: Ref<HTMLDivElement>;
   className?: string;
   style?: CSSProperties;
   highlight?: boolean;
   children?: ReactNode;
-}) {
+} & HTMLAttributes<HTMLDivElement>) {
   return (
-    <div ref={ref} className={`liquid-glass ${className}`} style={style} data-glass-highlight={highlight ? "" : undefined}>
+    <div ref={ref} className={`liquid-glass ${className}`} style={style} data-glass-highlight={highlight ? "" : undefined} {...rest}>
       <Rim />
       {children}
     </div>
