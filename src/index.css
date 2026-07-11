@@ -118,6 +118,7 @@ header {
   outline-offset: 3px;
   border-radius: 4px;
 }
+.nav-arrow-placeholder { visibility: hidden; }
 
 h1 {
   margin: 0;

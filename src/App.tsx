@@ -66,10 +66,14 @@ export function App() {
             </nav>
             <header>
               <div className="header-left">
-                {path !== "/" && (
+                {path !== "/" ? (
                   <RouteLink to="/" className="nav-arrow">
                     <span aria-hidden="true">←</span> Components
                   </RouteLink>
+                ) : (
+                  <span className="nav-arrow nav-arrow-placeholder" aria-hidden="true">
+                    <span aria-hidden="true">←</span> Components
+                  </span>
                 )}
                 <h1>{TITLES[path] ?? "Components"}</h1>
               </div>
