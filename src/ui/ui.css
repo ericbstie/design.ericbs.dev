@@ -582,21 +582,113 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
 .ui-calendar-day[aria-pressed="true"] { background: var(--accent-tint); color: var(--accent); font-weight: 600; }
 .ui-calendar-day:disabled { opacity: 0; pointer-events: none; }
 
-.ui-timepicker { display: flex; gap: 0.35rem; padding: 0.4rem; }
-.ui-time-col { max-height: 190px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; scrollbar-width: thin; }
+.ui-timepicker { display: flex; gap: 0.5rem; padding: 0.55rem; }
+
+.ui-time-trigger { cursor: text; }
+.ui-time-trigger:focus-within { border-color: var(--accent); }
+.ui-time-input {
+  border: none;
+  background: none;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  outline: none;
+}
+.ui-time-input::placeholder { color: var(--text-dim); }
+
+.ui-time-col-wrap { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; flex: 1; }
+.ui-time-col-label {
+  font-size: var(--ui-font-xs);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: center;
+}
+.ui-time-col {
+  max-height: 190px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  scrollbar-width: thin;
+  mask-image: linear-gradient(to bottom, transparent, black 10px, black calc(100% - 10px), transparent);
+}
 .ui-time-cell {
   border: none;
   border-radius: 8px;
-  padding: 0.3rem 0.8rem;
+  padding: 0.3rem 0.9rem;
   font: inherit;
   font-size: var(--ui-font-sm);
   font-variant-numeric: tabular-nums;
+  text-align: center;
   color: var(--text);
   background: none;
   transition: background 0.15s ease;
 }
 .ui-time-cell:hover { background: var(--control-hover); }
 .ui-time-cell[aria-pressed="true"] { background: var(--accent-tint); color: var(--accent); font-weight: 600; }
+
+/* Mobile: scroll-snap wheels covering all 24 hours / 60 minutes */
+.ui-timepicker-wheels { flex-direction: column; gap: 0.4rem; padding: 0.55rem 0.75rem 0.6rem; }
+.ui-wheel-row { position: relative; display: flex; align-items: stretch; justify-content: center; gap: 0.25rem; }
+.ui-wheel-band {
+  position: absolute;
+  left: 0.25rem;
+  right: 0.25rem;
+  top: calc(50% - 18px);
+  height: 36px;
+  border-radius: 10px;
+  background: var(--accent-tint);
+  pointer-events: none;
+}
+.ui-time-colon {
+  align-self: center;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  padding-bottom: 2px;
+}
+.ui-wheel {
+  box-sizing: border-box;
+  height: 180px;
+  padding: 72px 0;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  flex: 1;
+  min-width: 3.6rem;
+  mask-image: linear-gradient(to bottom, transparent, black 38%, black 62%, transparent);
+}
+.ui-wheel::-webkit-scrollbar { display: none; }
+.ui-wheel-cell {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  transition: color 0.15s ease;
+}
+.ui-wheel-cell[aria-selected="true"] { color: var(--accent); font-weight: 600; }
+.ui-time-done {
+  border: none;
+  border-radius: 10px;
+  padding: 0.45rem 0.9rem;
+  font: inherit;
+  font-size: var(--ui-font-sm);
+  font-weight: 500;
+  color: var(--accent);
+  background: var(--accent-tint);
+  transition: background 0.15s ease;
+}
+.ui-time-done:hover { background: var(--control-hover); }
 
 
 /* ---------- Card ---------- */

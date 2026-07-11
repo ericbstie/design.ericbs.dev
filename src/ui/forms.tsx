@@ -451,7 +451,103 @@ function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
 
-export function TimePicker({ value, onChange, placeholder = "Pick a time", minuteStep = 5, id }: {
+function usePointerCoarse() {
+  const [coarse, setCoarse] = useState(() => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: coarse)");
+    function update() { setCoarse(mq.matches); }
+
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  return coarse;
+}
+
+
+// Accepts "9", "9:5", "09:30", "0930", "9.30", "9h30"; snaps minutes to the step grid.
+function parseTime(text: string, step: number): string | null {
+  const m = text.trim().match(/^(\d{1,2})(?:[:.h\s]?([0-5]?\d))?$/);
+  if (!m) return null;
+
+  const hour = Number(m[1]);
+  if (hour > 23) return null;
+
+  const minute = Math.min(Math.round(Number(m[2] ?? 0) / step) * step, 60 - step);
+  return `${pad2(hour)}:${pad2(minute)}`;
+}
+
+
+function TimeList({ items, selected, onPick, label }: {
+  items: number[];
+  selected: number | null;
+  onPick: (v: number) => void;
+  label: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const cell = el?.querySelector<HTMLElement>("[aria-pressed='true']");
+    if (el && cell) el.scrollTop = cell.offsetTop - (el.clientHeight - cell.offsetHeight) / 2;
+  }, []);
+
+  return (
+    <div className="ui-time-col-wrap">
+      <span className="ui-time-col-label" aria-hidden="true">{label}</span>
+      <div className="ui-time-col" ref={ref} aria-label={label}>
+        {items.map(v => (
+          <button key={v} type="button" className="ui-time-cell" aria-pressed={v === selected} onClick={() => onPick(v)}>{pad2(v)}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+const WHEEL_CELL = 36;
+
+const WHEEL_ROWS = 5;
+
+function TimeWheel({ items, selected, onChange, label }: {
+  items: number[];
+  selected: number | null;
+  onChange: (v: number) => void;
+  label: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const settle = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (el) el.scrollTop = Math.max(items.indexOf(selected ?? items[0]!), 0) * WHEEL_CELL;
+  }, []);
+
+  function commit() {
+    const el = ref.current;
+    if (!el) return;
+
+    const index = Math.min(Math.max(Math.round(el.scrollTop / WHEEL_CELL), 0), items.length - 1);
+    onChange(items[index]!);
+  }
+
+  function onScroll() {
+    clearTimeout(settle.current);
+    settle.current = setTimeout(commit, 120);
+  }
+
+  return (
+    <div className="ui-wheel" ref={ref} onScroll={onScroll} role="listbox" aria-label={label}>
+      {items.map(v => (
+        <div key={v} className="ui-wheel-cell" role="option" aria-selected={v === selected}>{pad2(v)}</div>
+      ))}
+    </div>
+  );
+}
+
+
+export function TimePicker({ value, onChange, placeholder = "HH:MM", minuteStep = 5, id }: {
   value: string | null;
   onChange: (time: string) => void;
   placeholder?: string;
@@ -460,38 +556,96 @@ export function TimePicker({ value, onChange, placeholder = "Pick a time", minut
 }) {
   const [open, setOpen] = useState(false);
   const { anchorRef, popoverRef } = usePopover(() => setOpen(false));
+  const coarse = usePointerCoarse();
 
   const [hour, minute] = value ? value.split(":").map(Number) : [null, null];
   const hours = Array.from({ length: 24 }, (_, i) => i);
-  const minutes = Array.from({ length: Math.ceil(60 / minuteStep) }, (_, i) => i * minuteStep);
+  const stepMinutes = Array.from({ length: Math.ceil(60 / minuteStep) }, (_, i) => i * minuteStep);
+  const allMinutes = Array.from({ length: 60 }, (_, i) => i);
+
+  // Picks read the current time through a ref so a debounced wheel commit
+  // for one unit can't clobber a just-committed change to the other.
+  const current = useRef({ hour, minute });
+  current.current = { hour, minute };
 
   function pickHour(h: number) {
-    onChange(`${pad2(h)}:${pad2(minute ?? 0)}`);
+    onChange(`${pad2(h)}:${pad2(current.current.minute ?? 0)}`);
   }
 
   function pickMinute(m: number) {
-    onChange(`${pad2(hour ?? 0)}:${pad2(m)}`);
-    setOpen(false);
+    onChange(`${pad2(current.current.hour ?? 0)}:${pad2(m)}`);
+    if (!coarse) setOpen(false);
   }
 
-  return (
-    <div className="ui-popover-anchor" ref={anchorRef}>
+  const [draft, setDraft] = useState(value ?? "");
+  const lastValue = useRef(value);
+  if (lastValue.current !== value) {
+    lastValue.current = value;
+    setDraft(value ?? "");
+  }
+
+  function commitDraft() {
+    const parsed = parseTime(draft, minuteStep);
+    if (parsed) onChange(parsed);
+    else setDraft(value ?? "");
+  }
+
+  function onInputKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") { commitDraft(); setOpen(false); }
+    else if (e.key === "Escape") setOpen(false);
+  }
+
+  const trigger = coarse
+    ? (
       <button id={id} type="button" className="ui-control ui-select-trigger" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
         <span className={`ui-select-value ${value ? "" : "ui-select-placeholder"}`}>{value ?? placeholder}</span>
         <Chevron />
       </button>
+    )
+    : (
+      <div className={`ui-control ui-select-trigger ui-time-trigger ${open ? "ui-time-trigger-open" : ""}`}>
+        <input
+          id={id}
+          className="ui-time-input"
+          value={draft}
+          placeholder={placeholder}
+          inputMode="numeric"
+          autoComplete="off"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          onFocus={() => setOpen(true)}
+          onClick={() => setOpen(true)}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={commitDraft}
+          onKeyDown={onInputKeyDown}
+        />
+        <Chevron />
+      </div>
+    );
+
+  return (
+    <div className="ui-popover-anchor" ref={anchorRef}>
+      {trigger}
       {open && (
-        <Popover anchorRef={anchorRef} popoverRef={popoverRef} className="ui-timepicker" role="dialog" label="Choose time">
-          <div className="ui-time-col" aria-label="Hours">
-            {hours.map(h => (
-              <button key={h} type="button" className="ui-time-cell" aria-pressed={h === hour} onClick={() => pickHour(h)}>{pad2(h)}</button>
-            ))}
-          </div>
-          <div className="ui-time-col" aria-label="Minutes">
-            {minutes.map(m => (
-              <button key={m} type="button" className="ui-time-cell" aria-pressed={m === minute} onClick={() => pickMinute(m)}>{pad2(m)}</button>
-            ))}
-          </div>
+        <Popover anchorRef={anchorRef} popoverRef={popoverRef} className={`ui-timepicker ${coarse ? "ui-timepicker-wheels" : ""}`} role="dialog" label="Choose time">
+          {coarse
+            ? (
+              <>
+                <div className="ui-wheel-row">
+                  <div className="ui-wheel-band" aria-hidden="true" />
+                  <TimeWheel items={hours} selected={hour} onChange={pickHour} label="Hours" />
+                  <span className="ui-time-colon" aria-hidden="true">:</span>
+                  <TimeWheel items={allMinutes} selected={minute} onChange={pickMinute} label="Minutes" />
+                </div>
+                <button type="button" className="ui-time-done" onClick={() => setOpen(false)}>Done</button>
+              </>
+            )
+            : (
+              <>
+                <TimeList items={hours} selected={hour} onPick={pickHour} label="Hours" />
+                <TimeList items={stepMinutes} selected={minute} onPick={pickMinute} label="Minutes" />
+              </>
+            )}
         </Popover>
       )}
     </div>
