@@ -33,11 +33,8 @@ export function App() {
   }
 
   function onRippleEnd(ended: RippleState) {
-    const newest = ripples[ripples.length - 1] === ended;
-    if (!newest && ripples[0] !== ended) return;
-
     setTheme(ended.theme);
-    setRipples(newest ? [] : ripples.slice(1));
+    setRipples(rs => rs.filter(r => r.id > ended.id));
   }
 
   useEffect(() => {

@@ -33,7 +33,9 @@ export function Blobs({ style }: { style?: CSSProperties }) {
     const els = [...ref.current!.children] as HTMLElement[];
 
     let raf = requestAnimationFrame(function tick(t) {
-      const rc = ref.current!.getBoundingClientRect();
+      if (!ref.current) return;
+
+      const rc = ref.current.getBoundingClientRect();
 
       for (const [i, d] of blobDefs.entries()) {
         const r = d.rs * rc.width;
@@ -133,7 +135,7 @@ export function Ripple({ x, y, theme, onEnd }: { x: number; y: number; theme: Th
 
     const raf = requestAnimationFrame(() =>
       requestAnimationFrame(() => {
-        ref.current!.style.clipPath = `circle(${R}px at ${x}px ${y}px)`;
+        if (ref.current) ref.current.style.clipPath = `circle(${R}px at ${x}px ${y}px)`;
       }),
     );
 
@@ -201,6 +203,8 @@ export function SiteCursor() {
     document.documentElement.addEventListener("mouseleave", onMouseLeave);
 
     let raf = requestAnimationFrame(function tick() {
+      if (!bubRef.current) return;
+
       st.target = st.inside ? findSnapTarget(st.mx, st.my, st.target) : null;
 
       let tx = st.mx;
@@ -276,8 +280,10 @@ export function GlassCursor({ glass, onToggle }: { glass: Theme; onToggle: Toggl
     const st = s.current;
 
     let raf = requestAnimationFrame(function tick() {
-      const rc = stageRef.current!.getBoundingClientRect();
-      const br = btnRef.current!.getBoundingClientRect();
+      if (!stageRef.current || !btnRef.current || !bubRef.current) return;
+
+      const rc = stageRef.current.getBoundingClientRect();
+      const br = btnRef.current.getBoundingClientRect();
       const b = { cx: br.left - rc.left + br.width / 2, cy: br.top - rc.top + br.height / 2, w: br.width, h: br.height };
 
       const dx = st.mx - b.cx;
