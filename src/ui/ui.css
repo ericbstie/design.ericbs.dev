@@ -615,7 +615,6 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
   display: flex;
   flex-direction: column;
   gap: 2px;
-  scrollbar-width: thin;
   mask-image: linear-gradient(to bottom, transparent, black 10px, black calc(100% - 10px), transparent);
 }
 .ui-time-cell {
