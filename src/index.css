@@ -22,8 +22,6 @@
   --spot-color: #fff;
   --spot-core: 0.5;
   --spot-mid: 0.2;
-  --prism-core: 0.4;
-  --prism-ring: 0.55;
 }
 :root[data-glass="light"] {
   --glass-bg: rgba(255, 255, 255, 0.22);
@@ -34,8 +32,6 @@
   --spot-color: #131310;
   --spot-core: 0.22;
   --spot-mid: 0.09;
-  --prism-core: 0.14;
-  --prism-ring: 0.5;
 }
 
 body {
@@ -339,7 +335,7 @@ h1 {
 }
 
 @media (pointer: fine) {
-  html, body, button, a {
+  *, *::before, *::after {
     cursor: none;
   }
 }
@@ -381,34 +377,46 @@ h1 {
   stop-opacity: 0;
 }
 
-.prism-core {
-  stop-color: var(--spot-color);
-  stop-opacity: var(--prism-core);
+/* Glass refraction — a nacreous diagonal sweep (top-right → bottom-left),
+   shown over anything clickable. Barely-visible mother-of-pearl iridescence. */
+.refract {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 999;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0;
+  will-change: transform, opacity;
 }
-.prism-orange {
-  stop-color: #f08c00;
-  stop-opacity: var(--prism-ring);
+.refract-sweep {
+  position: absolute;
+  inset: -120%;
+  filter: blur(3px);
+  background: linear-gradient(
+    225deg,
+    transparent 34%,
+    rgba(255, 202, 232, 0.10) 43%,
+    rgba(255, 227, 194, 0.09) 47%,
+    rgba(201, 246, 224, 0.13) 50%,
+    rgba(190, 224, 255, 0.11) 53%,
+    rgba(214, 199, 255, 0.10) 57%,
+    transparent 66%
+  );
+  animation: refract-sweep 2.6s cubic-bezier(0.4, 0, 0.3, 1) infinite;
 }
-.prism-pink {
-  stop-color: #e64980;
-  stop-opacity: var(--prism-ring);
+@keyframes refract-sweep {
+  from { transform: translate(45%, -45%); }
+  to { transform: translate(-45%, 45%); }
 }
-.prism-blue {
-  stop-color: #1971c2;
-  stop-opacity: var(--prism-ring);
-}
-.prism-green {
-  stop-color: #0ca678;
-  stop-opacity: var(--prism-ring);
-}
-.prism-end {
-  stop-color: #0ca678;
-  stop-opacity: 0;
+@media (prefers-reduced-motion: reduce) {
+  .refract-sweep { animation: none; }
 }
 
 @media (hover: none), (pointer: coarse) {
   .bubble,
-  .morph-overlay {
+  .morph-overlay,
+  .refract {
     display: none;
   }
 }
