@@ -157,6 +157,7 @@ header {
   border-radius: 4px;
 }
 .nav-arrow-placeholder { visibility: hidden; }
+.nav-arrow-demos { align-self: flex-start; }
 
 h1 {
   margin: 0;

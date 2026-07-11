@@ -78,7 +78,7 @@ export function App() {
                 <h1>{TITLES[path] ?? "Components"}</h1>
               </div>
               {path === "/" ? (
-                <RouteLink to="/sample/1" className="nav-arrow">
+                <RouteLink to="/sample/1" className="nav-arrow nav-arrow-demos">
                   Go to demos <span aria-hidden="true">→</span>
                 </RouteLink>
               ) : (
