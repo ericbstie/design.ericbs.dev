@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Blobs, Ripple, SiteCursor, ThemeToggle, type Theme } from "./components";
+import { Blobs, Ripple, ThemeToggle, type Theme } from "./components";
+import { SiteCursor } from "./cursor";
 import { ToastProvider } from "./ui";
 import { Router, RouteLink } from "./router";
 import { Docs } from "./pages/Docs";

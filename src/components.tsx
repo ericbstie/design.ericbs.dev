@@ -84,15 +84,17 @@ export function LiquidGlass({
   ref,
   className = "",
   style,
+  highlight,
   children,
 }: {
   ref?: Ref<HTMLDivElement>;
   className?: string;
   style?: CSSProperties;
+  highlight?: boolean;
   children?: ReactNode;
 }) {
   return (
-    <div ref={ref} className={`liquid-glass ${className}`} style={style}>
+    <div ref={ref} className={`liquid-glass ${className}`} style={style} data-glass-highlight={highlight ? "" : undefined}>
       <Rim />
       {children}
     </div>
@@ -147,111 +149,6 @@ export function Ripple({ x, y, theme, onEnd }: { x: number; y: number; theme: Th
       <div style={{ position: "absolute", inset: 0, background: COLORS[theme] }} />
       <Blobs style={{ mixBlendMode: MODE[theme].blend, opacity: MODE[theme].op }} />
     </div>
-  );
-}
-
-
-const SNAP_SELECTOR = "button, a, [data-cursor-snap]";
-
-const LOCAL_CURSOR_SELECTOR = "[data-cursor-local]";
-
-function snapBox(el: HTMLElement) {
-  const r = el.getBoundingClientRect();
-
-  return { cx: r.left + r.width / 2, cy: r.top + r.height / 2, w: r.width, h: r.height };
-}
-
-function snapRange(b: ReturnType<typeof snapBox>, pad: number) {
-  return Math.max(b.w, b.h) / 2 + pad;
-}
-
-function findSnapTarget(mx: number, my: number, current: HTMLElement | null) {
-  if (current?.isConnected) {
-    const b = snapBox(current);
-    if (Math.hypot(mx - b.cx, my - b.cy) < snapRange(b, 44)) return current;
-  }
-
-  const els = [...document.querySelectorAll<HTMLElement>(SNAP_SELECTOR)].filter(el => !el.closest(LOCAL_CURSOR_SELECTOR));
-
-  return els.reduce<{ el: HTMLElement; dist: number } | null>((best, el) => {
-    const b = snapBox(el);
-    const dist = Math.hypot(mx - b.cx, my - b.cy);
-
-    if (dist >= snapRange(b, 16)) return best;
-    return !best || dist < best.dist ? { el, dist } : best;
-  }, null)?.el ?? null;
-}
-
-export function SiteCursor() {
-  const bubRef = useRef<HTMLDivElement>(null);
-  const s = useRef({ mx: -100, my: -100, x: -100, y: -100, w: 30, h: 30, tw: 30, th: 30, inside: false, target: null as HTMLElement | null });
-
-  useEffect(() => {
-    const st = s.current;
-
-    function onMouseMove(e: globalThis.MouseEvent) {
-      const local = e.target instanceof Element && e.target.closest(LOCAL_CURSOR_SELECTOR);
-
-      Object.assign(st, { mx: e.clientX, my: e.clientY, inside: !local });
-    }
-
-    function onMouseLeave() {
-      Object.assign(st, { inside: false, target: null });
-    }
-
-    window.addEventListener("mousemove", onMouseMove);
-    document.documentElement.addEventListener("mouseleave", onMouseLeave);
-
-    let raf = requestAnimationFrame(function tick() {
-      if (!bubRef.current) return;
-
-      st.target = st.inside ? findSnapTarget(st.mx, st.my, st.target) : null;
-
-      let tx = st.mx;
-      let ty = st.my;
-      let ease = 0.2;
-
-      if (st.target) {
-        const b = snapBox(st.target);
-        const dx = st.mx - b.cx;
-        const dy = st.my - b.cy;
-        const dist = Math.hypot(dx, dy);
-
-        const off = Math.min(dist / snapRange(b, 44), 1) * 9;
-        tx = b.cx + (dx / (dist || 1)) * off;
-        ty = b.cy + (dy / (dist || 1)) * off;
-        ease = 0.12;
-        Object.assign(st, { tw: b.w + 26, th: b.h - 8 });
-      } else {
-        Object.assign(st, { tw: 30, th: 30 });
-      }
-
-      st.x = lerp(st.x, tx, ease);
-      st.y = lerp(st.y, ty, ease);
-      st.w = lerp(st.w, st.tw, 0.18);
-      st.h = lerp(st.h, st.th, 0.18);
-
-      const bub = bubRef.current!.style;
-      bub.width = st.w + "px";
-      bub.height = st.h + "px";
-      bub.borderRadius = st.h / 2 + "px";
-      bub.transform = `translateZ(0) translate(${st.x - st.w / 2}px,${st.y - st.h / 2}px)`;
-      bub.opacity = st.inside ? "1" : "0";
-
-      raf = requestAnimationFrame(tick);
-    });
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("mousemove", onMouseMove);
-      document.documentElement.removeEventListener("mouseleave", onMouseLeave);
-    };
-  }, []);
-
-  return (
-    <LiquidGlass ref={bubRef} className="bubble">
-      <Noise />
-    </LiquidGlass>
   );
 }
 

@@ -9,7 +9,7 @@ import {
 
 function Demo({ label, children, tall }: { label: string; children: ReactNode; tall?: boolean }) {
   return (
-    <LiquidGlass className="card">
+    <LiquidGlass className="card" highlight>
       <div className={`demo-stage ${tall ? "demo-stage-tall" : ""}`}>{children}</div>
       <div className="card-label">{label}</div>
     </LiquidGlass>

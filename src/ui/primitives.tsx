@@ -10,7 +10,7 @@ export function Card({ title, subtitle, className = "", style, children }: {
   children?: ReactNode;
 }) {
   return (
-    <LiquidGlass className={`ui-card ${className}`} style={style}>
+    <LiquidGlass className={`ui-card ${className}`} style={style} highlight>
       {title && <h3 className="ui-card-title">{title}</h3>}
       {subtitle && <p className="ui-card-sub">{subtitle}</p>}
       {children}
@@ -28,7 +28,11 @@ export function Button({ variant = "default", size, className = "", children, ..
   const variantClass = variant === "default" ? "" : `ui-btn-${variant}`;
 
   return (
-    <button className={`ui-btn ${variantClass} ${size === "sm" ? "ui-btn-sm" : ""} ${className}`} {...rest}>
+    <button
+      className={`ui-btn ${variantClass} ${size === "sm" ? "ui-btn-sm" : ""} ${className}`}
+      data-glass-highlight={variant === "ghost" ? undefined : ""}
+      {...rest}
+    >
       {variant !== "ghost" && <Rim />}
       {children}
     </button>
@@ -45,7 +49,7 @@ export function Toggle({ checked, onChange, label }: {
 
   return (
     <span className="ui-toggle-row">
-      <button id={id} className="ui-toggle" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}>
+      <button id={id} className="ui-toggle" role="switch" aria-checked={checked} onClick={() => onChange(!checked)} data-glass-highlight="">
         <Rim />
         <span className="ui-toggle-thumb" />
       </button>
