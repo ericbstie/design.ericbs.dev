@@ -2,9 +2,10 @@ import { useEffect, useRef } from "react";
 import { LiquidGlass, Noise } from "./components";
 
 
-const HIGHLIGHT_SELECTOR = "[data-glass-highlight]";
+const HIGHLIGHT_SELECTOR = "[data-glass-highlight], .ui-control, .ui-table-wrap, .ui-tree, .ui-fileupload, .ui-popover";
 const SNAP_SELECTOR = ".theme-toggle";
 const LOCAL_SELECTOR = "[data-cursor-local]";
+const LINK_SELECTOR = "a";
 
 const WAKE_RANGE = 64;
 const ENGAGE_RANGE = 44;
@@ -180,15 +181,17 @@ export function SiteCursor() {
   const bubRef = useRef<HTMLDivElement>(null);
   const spotARef = useRef<SVGCircleElement>(null);
   const spotBRef = useRef<SVGCircleElement>(null);
+  const prismARef = useRef<SVGCircleElement>(null);
+  const prismBRef = useRef<SVGCircleElement>(null);
   const ambientRef = useRef<SVGGElement>(null);
   const boostRef = useRef<SVGGElement>(null);
   const clipRef = useRef<SVGPathElement>(null);
   const boostClipRef = useRef<SVGPathElement>(null);
 
   const s = useRef({
-    mx: -100, my: -100, inside: false,
+    mx: -100, my: -100, inside: false, overLink: false,
     x: { x: -100, v: -100 }, y: { x: -100, v: -100 }, w: { x: BUBBLE_SIZE, v: BUBBLE_SIZE }, h: { x: BUBBLE_SIZE, v: BUBBLE_SIZE }, opacity: 0,
-    spotX: { x: -100, v: -100 }, spotY: { x: -100, v: -100 }, spotO: 0, spotR: 26,
+    spotX: { x: -100, v: -100 }, spotY: { x: -100, v: -100 }, spotO: 0, spotR: 26, prism: 0,
     boostEl: null as HTMLElement | null, boostO: 0,
     snap: null as HTMLElement | null,
     shells: new Map<HTMLElement, Shell>(),
@@ -198,9 +201,10 @@ export function SiteCursor() {
     const st = s.current;
 
     function onMouseMove(e: globalThis.MouseEvent) {
-      const local = e.target instanceof Element && e.target.closest(LOCAL_SELECTOR);
+      const target = e.target instanceof Element ? e.target : null;
+      const local = target?.closest(LOCAL_SELECTOR);
 
-      Object.assign(st, { mx: e.clientX, my: e.clientY, inside: !local });
+      Object.assign(st, { mx: e.clientX, my: e.clientY, inside: !local, overLink: !!target?.closest(LINK_SELECTOR) });
     }
 
     function onMouseLeave() {
@@ -298,6 +302,7 @@ export function SiteCursor() {
       st.opacity = lerp(st.opacity, st.inside && (!onGlass || grown > 0.1) ? 1 : 0, 0.3);
 
       st.spotO = lerp(st.spotO, near ? 1 - grown : 0, 0.25);
+      st.prism = lerp(st.prism, st.overLink ? 1 : 0, 0.18);
       glide(st.spotX, st.mx, 0.3);
       glide(st.spotY, st.my, 0.3);
       if (near) st.spotR = lerp(st.spotR, clamp(Math.min(near.box.hw, near.box.hh) * 0.7, 22, 48), 0.2);
@@ -317,13 +322,17 @@ export function SiteCursor() {
       bub.transform = `translateZ(0) translate(${st.x.x - w / 2}px,${st.y.x - h / 2}px)`;
       bub.opacity = String(st.opacity);
 
-      for (const spot of [spotARef.current!, spotBRef.current!]) {
+      function renderSpot(spot: SVGCircleElement, r: number, opacity: number) {
         spot.setAttribute("cx", String(st.spotX.x));
         spot.setAttribute("cy", String(st.spotY.x));
-        spot.setAttribute("r", String(st.spotR));
+        spot.setAttribute("r", String(r));
+        spot.style.opacity = String(opacity);
       }
 
-      ambientRef.current!.style.opacity = String(st.spotO * 0.45);
+      for (const spot of [spotARef.current!, spotBRef.current!]) renderSpot(spot, st.spotR, 1 - st.prism);
+      for (const spot of [prismARef.current!, prismBRef.current!]) renderSpot(spot, st.spotR * 1.5, st.prism);
+
+      ambientRef.current!.style.opacity = String(st.spotO * (0.45 + st.prism * 0.2));
       boostRef.current!.style.opacity = String(st.spotO * 0.55 * st.boostO);
     }
 
@@ -346,8 +355,19 @@ export function SiteCursor() {
             <stop offset="55%" className="spot-mid" />
             <stop offset="100%" className="spot-end" />
           </radialGradient>
+          <radialGradient id="morph-spot-prism">
+            <stop offset="0%" className="prism-core" />
+            <stop offset="38%" className="prism-orange" />
+            <stop offset="58%" className="prism-pink" />
+            <stop offset="78%" className="prism-blue" />
+            <stop offset="92%" className="prism-green" />
+            <stop offset="100%" className="prism-end" />
+          </radialGradient>
           <filter id="morph-spot-blur" x="-60%" y="-60%" width="220%" height="220%">
             <feGaussianBlur stdDeviation="8" />
+          </filter>
+          <filter id="morph-prism-blur" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="4" />
           </filter>
           <clipPath id="morph-clip">
             <path ref={clipRef} />
@@ -358,9 +378,11 @@ export function SiteCursor() {
         </defs>
         <g ref={ambientRef} clipPath="url(#morph-clip)" style={{ opacity: 0 }}>
           <circle ref={spotARef} r="26" fill="url(#morph-spot)" filter="url(#morph-spot-blur)" />
+          <circle ref={prismARef} r="26" fill="url(#morph-spot-prism)" filter="url(#morph-prism-blur)" style={{ opacity: 0 }} />
         </g>
         <g ref={boostRef} clipPath="url(#morph-clip-boost)" style={{ opacity: 0 }}>
           <circle ref={spotBRef} r="26" fill="url(#morph-spot)" filter="url(#morph-spot-blur)" />
+          <circle ref={prismBRef} r="26" fill="url(#morph-spot-prism)" filter="url(#morph-prism-blur)" style={{ opacity: 0 }} />
         </g>
       </svg>
       <LiquidGlass ref={bubRef} className="bubble">

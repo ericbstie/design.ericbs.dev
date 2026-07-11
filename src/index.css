@@ -22,6 +22,8 @@
   --spot-color: #fff;
   --spot-core: 0.5;
   --spot-mid: 0.2;
+  --prism-core: 0.4;
+  --prism-ring: 0.55;
 }
 :root[data-glass="light"] {
   --glass-bg: rgba(255, 255, 255, 0.22);
@@ -32,6 +34,8 @@
   --spot-color: #131310;
   --spot-core: 0.22;
   --spot-mid: 0.09;
+  --prism-core: 0.14;
+  --prism-ring: 0.5;
 }
 
 body {
@@ -351,6 +355,31 @@ h1 {
 }
 .spot-end {
   stop-color: var(--spot-color);
+  stop-opacity: 0;
+}
+
+.prism-core {
+  stop-color: var(--spot-color);
+  stop-opacity: var(--prism-core);
+}
+.prism-orange {
+  stop-color: #f08c00;
+  stop-opacity: var(--prism-ring);
+}
+.prism-pink {
+  stop-color: #e64980;
+  stop-opacity: var(--prism-ring);
+}
+.prism-blue {
+  stop-color: #1971c2;
+  stop-opacity: var(--prism-ring);
+}
+.prism-green {
+  stop-color: #0ca678;
+  stop-opacity: var(--prism-ring);
+}
+.prism-end {
+  stop-color: #0ca678;
   stop-opacity: 0;
 }
 
