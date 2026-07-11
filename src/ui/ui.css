@@ -390,6 +390,7 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
   background: var(--control-bg);
   overflow: hidden;
 }
+:root[data-glass="light"] .ui-skeleton { background: rgba(19, 19, 16, 0.1); }
 .ui-skeleton::after {
   content: "";
   position: absolute;
