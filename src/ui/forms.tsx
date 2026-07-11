@@ -1,14 +1,17 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type FormHTMLAttributes,
   type InputHTMLAttributes,
   type KeyboardEvent,
   type ReactNode,
+  type RefObject,
   type TextareaHTMLAttributes,
 } from "react";
+import { createPortal } from "react-dom";
 import { Button, Label, Tag } from "./primitives";
 
 
@@ -50,11 +53,14 @@ export function Form({ children, onSubmit, ...rest }: FormHTMLAttributes<HTMLFor
 
 
 function usePopover(onClose: () => void) {
-  const ref = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onPointerDown(e: PointerEvent) {
-      if (!ref.current?.contains(e.target as Node)) onClose();
+      const target = e.target as Node;
+      if (anchorRef.current?.contains(target) || popoverRef.current?.contains(target)) return;
+      onClose();
     }
 
     function onKeyDown(e: globalThis.KeyboardEvent) {
@@ -70,7 +76,56 @@ function usePopover(onClose: () => void) {
     };
   }, [onClose]);
 
-  return ref;
+  return { anchorRef, popoverRef };
+}
+
+
+// Portaled to <body> so the popover escapes the transformed .liquid-glass cards;
+// only outside those does its backdrop-filter frost the real page behind it.
+function Popover({ anchorRef, popoverRef, className = "", role, label, children }: {
+  anchorRef: RefObject<HTMLDivElement | null>;
+  popoverRef: RefObject<HTMLDivElement | null>;
+  className?: string;
+  role?: string;
+  label?: string;
+  children: ReactNode;
+}) {
+  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  useLayoutEffect(() => {
+    function place() {
+      const anchor = anchorRef.current;
+      if (!anchor) return;
+
+      const r = anchor.getBoundingClientRect();
+      setRect({ top: r.bottom + 6, left: r.left, width: r.width });
+    }
+
+    place();
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  }, [anchorRef]);
+
+
+  if (!rect) return null;
+
+  return createPortal(
+    <div
+      ref={popoverRef}
+      className={`ui-popover ${className}`}
+      role={role}
+      aria-label={label}
+      style={{ position: "fixed", top: rect.top, left: rect.left, minWidth: rect.width }}
+    >
+      {children}
+    </div>,
+    document.body,
+  );
 }
 
 function Chevron() {
@@ -118,7 +173,7 @@ export function Select({ options, value, onChange, placeholder = "Select…", id
   id?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = usePopover(() => setOpen(false));
+  const { anchorRef, popoverRef } = usePopover(() => setOpen(false));
   const listId = useId();
 
   function pick(i: number) {
@@ -130,7 +185,7 @@ export function Select({ options, value, onChange, placeholder = "Select…", id
   const selected = options.find(o => o.value === value);
 
   return (
-    <div className="ui-popover-anchor" ref={ref}>
+    <div className="ui-popover-anchor" ref={anchorRef}>
       <button
         id={id}
         type="button"
@@ -146,7 +201,7 @@ export function Select({ options, value, onChange, placeholder = "Select…", id
         <Chevron />
       </button>
       {open && (
-        <div className="ui-popover">
+        <Popover anchorRef={anchorRef} popoverRef={popoverRef}>
           <ul className="ui-listbox" role="listbox" id={listId}>
             {options.map((o, i) => (
               <li
@@ -164,7 +219,7 @@ export function Select({ options, value, onChange, placeholder = "Select…", id
               </li>
             ))}
           </ul>
-        </div>
+        </Popover>
       )}
     </div>
   );
@@ -179,7 +234,7 @@ export function MultiSelect({ options, value, onChange, placeholder = "Select…
   id?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = usePopover(() => setOpen(false));
+  const { anchorRef, popoverRef } = usePopover(() => setOpen(false));
   const listId = useId();
 
   function toggleValue(v: string) {
@@ -190,7 +245,7 @@ export function MultiSelect({ options, value, onChange, placeholder = "Select…
   const selected = options.filter(o => value.includes(o.value));
 
   return (
-    <div className="ui-popover-anchor" ref={ref}>
+    <div className="ui-popover-anchor" ref={anchorRef}>
       <button
         id={id}
         type="button"
@@ -214,7 +269,7 @@ export function MultiSelect({ options, value, onChange, placeholder = "Select…
         <Chevron />
       </button>
       {open && (
-        <div className="ui-popover">
+        <Popover anchorRef={anchorRef} popoverRef={popoverRef}>
           <ul className="ui-listbox" role="listbox" aria-multiselectable="true" id={listId}>
             {options.map((o, i) => (
               <li
@@ -232,7 +287,7 @@ export function MultiSelect({ options, value, onChange, placeholder = "Select…
               </li>
             ))}
           </ul>
-        </div>
+        </Popover>
       )}
     </div>
   );
@@ -347,7 +402,7 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", id }:
 }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => value ?? new Date());
-  const ref = usePopover(() => setOpen(false));
+  const { anchorRef, popoverRef } = usePopover(() => setOpen(false));
 
   const year = view.getFullYear();
   const month = view.getMonth();
@@ -364,13 +419,13 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", id }:
   }
 
   return (
-    <div className="ui-popover-anchor" ref={ref}>
+    <div className="ui-popover-anchor" ref={anchorRef}>
       <button id={id} type="button" className="ui-control ui-select-trigger" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
         <span className={`ui-select-value ${value ? "" : "ui-select-placeholder"}`}>{value ? formatDate(value) : placeholder}</span>
         <Chevron />
       </button>
       {open && (
-        <div className="ui-popover ui-calendar" role="dialog" aria-label="Choose date">
+        <Popover anchorRef={anchorRef} popoverRef={popoverRef} className="ui-calendar" role="dialog" label="Choose date">
           <div className="ui-calendar-head">
             <button type="button" className="ui-calendar-nav" aria-label="Previous month" onClick={() => setView(new Date(year, month - 1, 1))}>‹</button>
             <span className="ui-calendar-month">{MONTHS[month]} {year}</span>
@@ -385,7 +440,7 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", id }:
               </button>
             ))}
           </div>
-        </div>
+        </Popover>
       )}
     </div>
   );
@@ -404,7 +459,7 @@ export function TimePicker({ value, onChange, placeholder = "Pick a time", minut
   id?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = usePopover(() => setOpen(false));
+  const { anchorRef, popoverRef } = usePopover(() => setOpen(false));
 
   const [hour, minute] = value ? value.split(":").map(Number) : [null, null];
   const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -420,13 +475,13 @@ export function TimePicker({ value, onChange, placeholder = "Pick a time", minut
   }
 
   return (
-    <div className="ui-popover-anchor" ref={ref}>
+    <div className="ui-popover-anchor" ref={anchorRef}>
       <button id={id} type="button" className="ui-control ui-select-trigger" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
         <span className={`ui-select-value ${value ? "" : "ui-select-placeholder"}`}>{value ?? placeholder}</span>
         <Chevron />
       </button>
       {open && (
-        <div className="ui-popover ui-timepicker" role="dialog" aria-label="Choose time">
+        <Popover anchorRef={anchorRef} popoverRef={popoverRef} className="ui-timepicker" role="dialog" label="Choose time">
           <div className="ui-time-col" aria-label="Hours">
             {hours.map(h => (
               <button key={h} type="button" className="ui-time-cell" aria-pressed={h === hour} onClick={() => pickHour(h)}>{pad2(h)}</button>
@@ -437,7 +492,7 @@ export function TimePicker({ value, onChange, placeholder = "Pick a time", minut
               <button key={m} type="button" className="ui-time-cell" aria-pressed={m === minute} onClick={() => pickMinute(m)}>{pad2(m)}</button>
             ))}
           </div>
-        </div>
+        </Popover>
       )}
     </div>
   );
