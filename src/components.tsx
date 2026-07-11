@@ -154,11 +154,40 @@ export function Ripple({ x, y, theme, onEnd }: { x: number; y: number; theme: Th
 }
 
 
-export function GlassCursor({ glass, onToggle }: { glass: Theme; onToggle: ToggleFn }) {
+// Snap constants + math below mirror SiteCursor in src/cursor.tsx so this demo's
+// acquire / pull / morph / release feel is byte-for-byte identical to the real
+// site cursor. Coordinates are stage-local here (the bubble lives inside the
+// stage) rather than viewport, but the geometry is relative so the same numbers
+// apply. Keep in sync with cursor.tsx: BUBBLE_SIZE, glide, snapRange(6/14), the
+// *4 pull offset, tw = w + 12 / th = h - 4, and eases 0.28 / 0.25.
+const BUBBLE_SIZE = 30;
+
+
+type Glide = { x: number; v: number };
+
+function glide(g: Glide, target: number, r: number) {
+  g.v = lerp(g.v, target, r);
+  g.x = lerp(g.x, g.v, r);
+  return g.x;
+}
+
+
+type SnapBox = { cx: number; cy: number; w: number; h: number };
+
+function snapRange(b: SnapBox, pad: number) {
+  return Math.max(b.w, b.h) / 2 + pad;
+}
+
+
+export function GlassCursor() {
   const stageRef = useRef<HTMLDivElement>(null);
   const bubRef = useRef<HTMLDivElement>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const s = useRef({ mx: 80, my: 80, x: 80, y: 80, w: 30, h: 30, tw: 30, th: 30, snapped: false, inside: false });
+  const targetRef = useRef<HTMLDivElement>(null);
+  const s = useRef({
+    mx: 80, my: 80, inside: false, snapped: false, opacity: 0,
+    x: { x: 80, v: 80 }, y: { x: 80, v: 80 },
+    w: { x: BUBBLE_SIZE, v: BUBBLE_SIZE }, h: { x: BUBBLE_SIZE, v: BUBBLE_SIZE },
+  });
 
   function onMouseMove(e: MouseEvent) {
     const r = stageRef.current!.getBoundingClientRect();
@@ -170,54 +199,53 @@ export function GlassCursor({ glass, onToggle }: { glass: Theme; onToggle: Toggl
     Object.assign(s.current, { inside: false, snapped: false });
   }
 
-  function onClick(e: MouseEvent) {
-    if (s.current.snapped) onToggle(e.clientX, e.clientY);
-  }
-
   useEffect(() => {
     const st = s.current;
 
     let raf = requestAnimationFrame(function tick() {
-      if (!stageRef.current || !btnRef.current || !bubRef.current) return;
+      if (!stageRef.current || !targetRef.current || !bubRef.current) return;
 
       const rc = stageRef.current.getBoundingClientRect();
-      const br = btnRef.current.getBoundingClientRect();
-      const b = { cx: br.left - rc.left + br.width / 2, cy: br.top - rc.top + br.height / 2, w: br.width, h: br.height };
+      const tr = targetRef.current.getBoundingClientRect();
+      const b: SnapBox = { cx: tr.left - rc.left + tr.width / 2, cy: tr.top - rc.top + tr.height / 2, w: tr.width, h: tr.height };
 
       const dx = st.mx - b.cx;
       const dy = st.my - b.cy;
       const dist = Math.hypot(dx, dy);
 
-      const snapIn = Math.max(b.w, b.h) / 2 + 16;
-      const snapOut = Math.max(b.w, b.h) / 2 + 44;
-      if (!st.snapped && dist < snapIn) st.snapped = true;
-      if (st.snapped && dist > snapOut) st.snapped = false;
+      const acquired = dist < snapRange(b, 6);
+      st.snapped = st.inside && (acquired || (st.snapped && dist < snapRange(b, 14)));
 
       let tx = st.mx;
       let ty = st.my;
-      let ease = 0.2;
+      let tw = BUBBLE_SIZE;
+      let th = BUBBLE_SIZE;
+      let ease = 0.35;
 
       if (st.snapped) {
-        const off = Math.min(dist / snapOut, 1) * 9;
+        const off = Math.min(dist / snapRange(b, 14), 1) * 4;
         tx = b.cx + (dx / (dist || 1)) * off;
         ty = b.cy + (dy / (dist || 1)) * off;
-        ease = 0.12;
-        Object.assign(st, { tw: b.w + 26, th: b.h - 8 });
-      } else {
-        Object.assign(st, { tw: 30, th: 30 });
+        tw = b.w + 12;
+        th = b.h - 4;
+        ease = 0.28;
       }
 
-      st.x = lerp(st.x, tx, ease);
-      st.y = lerp(st.y, ty, ease);
-      st.w = lerp(st.w, st.tw, 0.18);
-      st.h = lerp(st.h, st.th, 0.18);
+      glide(st.x, tx, ease);
+      glide(st.y, ty, ease);
+      glide(st.w, tw, 0.25);
+      glide(st.h, th, 0.25);
+      st.opacity = lerp(st.opacity, st.inside ? 1 : 0, 0.3);
 
-      const bub = bubRef.current!.style;
-      bub.width = st.w + "px";
-      bub.height = st.h + "px";
-      bub.borderRadius = st.h / 2 + "px";
-      bub.transform = `translateZ(0) translate(${st.x - st.w / 2}px,${st.y - st.h / 2}px)`;
-      bub.opacity = st.inside ? "1" : "0";
+      const w = Math.max(st.w.x, 0);
+      const h = Math.max(st.h.x, 0);
+
+      const bub = bubRef.current.style;
+      bub.width = w + "px";
+      bub.height = h + "px";
+      bub.borderRadius = h / 2 + "px";
+      bub.transform = `translateZ(0) translate(${st.x.x - w / 2}px,${st.y.x - h / 2}px)`;
+      bub.opacity = String(st.opacity);
 
       raf = requestAnimationFrame(tick);
     });
@@ -226,13 +254,11 @@ export function GlassCursor({ glass, onToggle }: { glass: Theme; onToggle: Toggl
   }, []);
 
   return (
-    <div ref={stageRef} className="stage cursor-stage" data-cursor-local onMouseMove={onMouseMove} onMouseLeave={onMouseLeave} onClick={onClick}>
+    <div ref={stageRef} className="stage cursor-stage" data-cursor-local onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}>
       <LiquidGlass ref={bubRef} className="bubble bubble-local">
         <Noise />
       </LiquidGlass>
-      <button ref={btnRef} className="theme-toggle target" aria-label="Toggle theme">
-        <ThemeIcon glass={glass} />
-      </button>
+      <div ref={targetRef} className="target">Hover me</div>
     </div>
   );
 }

@@ -360,7 +360,7 @@ const DEMOS: { name: string; render: (glass: Theme, onToggle: ToggleFn) => React
   { name: "Breadcrumb", render: () => <BreadcrumbDemo /> },
   { name: "Link", render: () => <LinkDemo /> },
   { name: "Chat shimmer", render: () => <ChatShimmerDemo /> },
-  { name: "Glass cursor", render: (glass, onToggle) => <GlassCursor glass={glass} onToggle={onToggle} /> },
+  { name: "Glass cursor", render: () => <GlassCursor /> },
 ];
 
 
