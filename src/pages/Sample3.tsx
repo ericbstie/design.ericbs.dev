@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Breadcrumb, Button, Card, ChatShimmer, DatePicker, Field, FileUpload, Form, RadioGroup, TextArea, TimePicker, Tooltip, useToast } from "../ui";
+import { Button, Card, ChatShimmer, DatePicker, Field, FileUpload, Form, RadioGroup, TextArea, TimePicker, Tooltip, useToast } from "../ui";
 import { RouteLink } from "../router";
 
 
@@ -46,8 +46,6 @@ export function Sample3() {
 
   return (
     <div className="sample">
-      <Breadcrumb items={[{ label: <RouteLink className="ui-link" to="/">Components</RouteLink> }, { label: "Sample 3 — Assistant" }]} />
-
       <section className="grid sample-split chat-layout">
         <Card title="Aurora" subtitle="Your planning assistant">
           <div className="chat-log" aria-live="polite">

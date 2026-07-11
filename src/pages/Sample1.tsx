@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Breadcrumb, Button, Card, Field, Form, Input, Link, Progress, Tag, useToast } from "../ui";
+import { Button, Card, Field, Form, Input, Link, Progress, Tag, useToast } from "../ui";
 import { RouteLink, useRouter } from "../router";
 
 
@@ -22,8 +22,6 @@ export function Sample1() {
 
   return (
     <div className="sample">
-      <Breadcrumb items={[{ label: <RouteLink className="ui-link" to="/">Components</RouteLink> }, { label: "Sample 1 — Landing" }]} />
-
       <section className="hero">
         <Tag variant="accent">Now in beta</Tag>
         <h2>Build interfaces that feel like light through glass.</h2>
