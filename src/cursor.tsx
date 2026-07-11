@@ -3,7 +3,7 @@ import { LiquidGlass, Noise } from "./components";
 
 
 const HIGHLIGHT_SELECTOR = "[data-glass-highlight]";
-const SNAP_SELECTOR = "button, a, [data-cursor-snap]";
+const SNAP_SELECTOR = ".theme-toggle";
 const LOCAL_SELECTOR = "[data-cursor-local]";
 
 const WAKE_RANGE = 64;
@@ -155,7 +155,7 @@ function nearestAcquirable(mx: number, my: number) {
     const b = snapBox(el);
     const dist = Math.hypot(mx - b.cx, my - b.cy);
 
-    if (dist >= snapRange(b, 16)) return best;
+    if (dist >= snapRange(b, 6)) return best;
     return !best || dist < best.dist ? { el, dist } : best;
   }, null)?.el ?? null;
 }
@@ -166,7 +166,7 @@ function findSnapTarget(mx: number, my: number, current: HTMLElement | null) {
 
   if (current?.isConnected) {
     const b = snapBox(current);
-    if (Math.hypot(mx - b.cx, my - b.cy) < snapRange(b, 44)) return current;
+    if (Math.hypot(mx - b.cx, my - b.cy) < snapRange(b, 14)) return current;
   }
 
   return null;
@@ -281,12 +281,12 @@ export function SiteCursor() {
         const dy = st.my - b.cy;
         const dist = Math.hypot(dx, dy);
 
-        const off = Math.min(dist / snapRange(b, 44), 1) * 9;
+        const off = Math.min(dist / snapRange(b, 14), 1) * 4;
         tx = b.cx + (dx / (dist || 1)) * off;
         ty = b.cy + (dy / (dist || 1)) * off;
-        tw = b.w + 26;
-        th = b.h - 8;
-        ease = 0.2;
+        tw = b.w + 12;
+        th = b.h - 4;
+        ease = 0.28;
       } else if (onGlass) {
         tw = th = BUBBLE_SIZE * grown;
       }
