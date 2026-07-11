@@ -7,7 +7,8 @@
     "dev": "bun --hot src/index.ts",
     "start": "NODE_ENV=production bun --watch src/index.ts",
     "build": "bun run build.ts",
-    "build:pkg": "bun run packages/react-glass-components/build.ts"
+    "build:pkg": "bun run packages/react-glass-components/build.ts",
+    "publish:pkg": "bun publish --cwd packages/react-glass-components"
   },
   "dependencies": {
     "bun-plugin-tailwind": "^0.1.2",

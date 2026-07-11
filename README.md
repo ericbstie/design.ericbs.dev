@@ -24,4 +24,12 @@ See the [package README](packages/react-glass-components/README.md) for setup de
 
 ### Releasing
 
-`bun run build:pkg` to build, then `npm publish` from `packages/react-glass-components`.
+One-time setup: `bunx npm login` (the account must own the package's npm scope).
+
+Then, from the repo root:
+
+```sh
+bun run publish:pkg
+```
+
+or equivalently `bun publish` from inside `packages/react-glass-components`. Publishing packs and builds `dist/` automatically via `prepublishOnly` — no separate build step needed. Bump `version` in `packages/react-glass-components/package.json` before each release.
