@@ -13,7 +13,7 @@
   --control-hover: rgba(255, 255, 255, 0.13);
   --control-active: rgba(255, 255, 255, 0.2);
   --surface: rgba(28, 28, 24, 0.82);
-  --surface-overlay: rgba(24, 24, 21, 0.97);
+  --surface-overlay: rgba(24, 24, 21, 0.9);
   --divider: rgba(255, 255, 255, 0.14);
   --danger: #ffa8a8;
   --success: #96f2d7;
@@ -27,7 +27,7 @@
   --control-hover: rgba(255, 255, 255, 0.52);
   --control-active: rgba(255, 255, 255, 0.68);
   --surface: rgba(244, 241, 236, 0.88);
-  --surface-overlay: rgba(247, 245, 241, 0.98);
+  --surface-overlay: rgba(247, 245, 241, 0.9);
   --divider: rgba(19, 19, 16, 0.16);
   --danger: #c92a2a;
   --success: #087f5b;
@@ -180,6 +180,33 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
   padding: 0.35rem;
   animation: ui-pop 0.18s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.ui-popover::before,
+.ui-popover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.2px;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+.ui-popover::before {
+  opacity: var(--rim-white);
+  background: linear-gradient(180deg,
+    rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 30%,
+    rgba(255, 255, 255, 0.03) 55%, rgba(255, 255, 255, 0.08) 80%,
+    rgba(255, 255, 255, 0.28) 100%);
+}
+.ui-popover::after {
+  opacity: var(--rim-black);
+  background: linear-gradient(180deg,
+    rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.3) 30%,
+    rgba(0, 0, 0, 0.15) 55%, rgba(0, 0, 0, 0.22) 80%,
+    rgba(0, 0, 0, 0.55) 100%);
 }
 @keyframes ui-pop {
   from { opacity: 0; transform: translateY(-4px) scale(0.98); }
