@@ -1,0 +1,43 @@
+{
+  "name": "@ericbs-ai/react-glass-components",
+  "version": "0.1.0",
+  "description": "Liquid-glass React components: frosted cards, buttons, forms, feedback and data displays with animated gradient blobs and light/dark glass themes.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Eric Bieszczad-Stie",
+  "homepage": "https://design.ericbs.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ericbstie/design.ericbs.dev.git",
+    "directory": "packages/react-glass-components"
+  },
+  "keywords": ["react", "components", "glassmorphism", "liquid-glass", "ui", "design-system"],
+  "files": ["dist", "README.md", "LICENSE"],
+  "sideEffects": ["**/*.css"],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "style": "./dist/index.css",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./styles.css": {
+      "types": "./dist/styles.d.css.ts",
+      "default": "./dist/index.css"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "bun run build.ts",
+    "prepublishOnly": "bun run build.ts"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

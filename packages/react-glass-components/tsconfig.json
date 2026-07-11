@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "rootDir": "../../src",
+    "outDir": "dist",
+    "paths": {}
+  },
+  "include": ["../../src/lib.ts", "../../src/components.tsx", "../../src/ui/**/*.ts", "../../src/ui/**/*.tsx", "../../bun-env.d.ts"]
+}
