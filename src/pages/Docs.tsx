@@ -5,6 +5,7 @@ import {
   MultiSelect, Progress, RadioGroup, Select, Skeleton, Table, Tag, TextArea, TimePicker, Timeline,
   Toggle, Tooltip, Tree, useToast,
 } from "../ui";
+import { ThemeSection } from "./theme";
 
 
 const FOCUSABLE = "a[href], button, input, select, textarea, [tabindex]";
@@ -371,6 +372,10 @@ export function Docs({ glass, onToggle }: { glass: Theme; onToggle: ToggleFn }) 
 
   return (
     <>
+      <ThemeSection />
+      <div className="theme-head components-head">
+        <h2 className="theme-title">Components</h2>
+      </div>
       <div className="docs-intro">
         <Input
           type="search"

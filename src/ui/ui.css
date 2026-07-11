@@ -1,13 +1,59 @@
 :root {
-  --ui-radius: 12px;
-  --ui-radius-pill: 999px;
-  --ui-font-sm: 0.875rem;
-  --ui-font-xs: 0.75rem;
+  /* ---------- Foundation scales (color-independent, both glass modes) ---------- */
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Type — rem steps matching the sizes already in use */
+  --font-xs: 0.75rem;
+  --font-sm: 0.875rem;
+  --font-md: 1rem;
+  --font-lg: 1.25rem;
+  --font-xl: 1.5rem;
+  --font-2xl: 2rem;
+  --font-3xl: 3rem;
+
+  /* Backdrop blur — the frosting depth of a surface */
+  --blur-sm: 20px;
+  --blur-md: 40px;
+  --blur-lg: 64px;
+
+  /* Elevation — the shadow a floating glass layer casts */
+  --shadow-sm: 0 4px 30px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.25);
+
+  /* Back-compat aliases (existing components refer to these) */
+  --ui-radius: var(--radius-md);
+  --ui-radius-pill: var(--radius-pill);
+  --ui-font-sm: var(--font-sm);
+  --ui-font-xs: var(--font-xs);
+
+  /* ---------- Primitive palette — Open Color (opencolor.io) ----------
+     Private reference tier. Components consume the SEMANTIC roles below,
+     never these raw ramps. A theme is just a different mapping of role -> ramp. */
+  --blue-3: #74c0fc;
+  --blue-5: #339af0;
+  --blue-8: #1971c2;
+  --blue-9: #1864ab;
+  --red-3: #ffa8a8;
+  --red-9: #c92a2a;
+  --teal-2: #96f2d7;
+  --teal-9: #087f5b;
+  /* Accessibility-tuned deep variants (darker than OC-9) so status text
+     clears WCAG AA on its own translucent tint over light glass. */
+  --red-deep: #a51f1f;
+  --teal-deep: #0b6b48;
 }
-:root[data-glass="dark"] {
-  --accent: #74c0fc;
-  --accent-strong: #339af0;
-  --accent-tint: rgba(116, 192, 252, 0.16);
+
+/* Semantic roles resolve per glass mode. Attribute (not :root) selectors so a
+   token set can be re-scoped to any container — see the Theme mode matrix. */
+[data-glass="dark"] {
+  --accent: var(--blue-3);
+  --accent-strong: var(--blue-5);
+  --accent-tint: color-mix(in srgb, var(--accent) 16%, transparent);
   --text-dim: rgba(255, 255, 255, 0.65);
   --control-bg: rgba(255, 255, 255, 0.07);
   --control-hover: rgba(255, 255, 255, 0.13);
@@ -15,13 +61,13 @@
   --surface: rgba(28, 28, 24, 0.82);
   --surface-overlay: rgba(24, 24, 21, 0.55);
   --divider: rgba(255, 255, 255, 0.14);
-  --danger: #ffa8a8;
-  --success: #96f2d7;
+  --danger: var(--red-3);
+  --success: var(--teal-2);
 }
-:root[data-glass="light"] {
-  --accent: #1864ab;
-  --accent-strong: #1971c2;
-  --accent-tint: rgba(25, 113, 194, 0.14);
+[data-glass="light"] {
+  --accent: var(--blue-9);
+  --accent-strong: var(--blue-8);
+  --accent-tint: color-mix(in srgb, var(--accent) 14%, transparent);
   --text-dim: rgba(19, 19, 16, 0.62);
   --control-bg: rgba(255, 255, 255, 0.34);
   --control-hover: rgba(255, 255, 255, 0.52);
@@ -29,8 +75,8 @@
   --surface: rgba(244, 241, 236, 0.88);
   --surface-overlay: rgba(247, 245, 241, 0.6);
   --divider: rgba(19, 19, 16, 0.16);
-  --danger: #c92a2a;
-  --success: #087f5b;
+  --danger: var(--red-deep);
+  --success: var(--teal-deep);
 }
 
 .ui-focusable:focus-visible,
@@ -172,9 +218,9 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
   box-sizing: border-box;
   border-radius: var(--ui-radius);
   background: var(--surface-overlay);
-  backdrop-filter: blur(64px) saturate(200%);
-  -webkit-backdrop-filter: blur(64px) saturate(200%);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(var(--blur-lg)) saturate(200%);
+  -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(200%);
+  box-shadow: var(--shadow-lg);
   padding: 0.35rem;
   animation: ui-pop 0.18s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
@@ -301,9 +347,9 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
   font-size: var(--ui-font-xs);
   color: var(--text);
   background: var(--surface);
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(var(--blur-md)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(180%);
+  box-shadow: var(--shadow-md);
   pointer-events: none;
   animation: ui-pop 0.15s ease;
 }
@@ -332,9 +378,9 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
   font-size: var(--ui-font-sm);
   color: var(--text);
   background: var(--surface);
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(var(--blur-md)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(180%);
+  box-shadow: var(--shadow-lg);
   pointer-events: auto;
   animation: ui-toast-in 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
@@ -390,7 +436,7 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
   background: var(--control-bg);
   overflow: hidden;
 }
-:root[data-glass="light"] .ui-skeleton { background: rgba(19, 19, 16, 0.1); }
+[data-glass="light"] .ui-skeleton { background: rgba(19, 19, 16, 0.1); }
 .ui-skeleton::after {
   content: "";
   position: absolute;

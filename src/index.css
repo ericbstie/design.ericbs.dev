@@ -1,19 +1,28 @@
 :root {
   --noise: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='120' height='120' filter='url(%23n)'/></svg>");
+
+  /* Spectrum — the six Open Color hues of the animated blob field. Primitive
+     tier for the page's prismatic backdrop; the glass floats over these. */
+  --spectrum-orange: #e8590c;
+  --spectrum-amber: #f08c00;
+  --spectrum-pink: #e64980;
+  --spectrum-teal: #0ca678;
+  --spectrum-blue: #1971c2;
+  --spectrum-violet: #6741d9;
 }
-:root[data-theme="dark"] {
+[data-theme="dark"] {
   color-scheme: dark;
   --base: #131310;
   --blob-blend: screen;
   --blob-op: 0.4;
 }
-:root[data-theme="light"] {
+[data-theme="light"] {
   color-scheme: light;
   --base: #eeeae4;
   --blob-blend: multiply;
   --blob-op: 0.6;
 }
-:root[data-glass="dark"] {
+[data-glass="dark"] {
   --glass-bg: rgba(255, 255, 255, 0.05);
   --rim-white: 1;
   --rim-black: 0;
@@ -25,7 +34,7 @@
   --scroll-thumb: rgba(255, 255, 255, 0.22);
   --scroll-thumb-hover: rgba(255, 255, 255, 0.42);
 }
-:root[data-glass="light"] {
+[data-glass="light"] {
   --glass-bg: rgba(255, 255, 255, 0.22);
   --rim-white: 0;
   --rim-black: 1;
@@ -161,7 +170,7 @@ header {
 
 h1 {
   margin: 0;
-  font-size: 3rem;
+  font-size: var(--font-3xl);
   font-weight: 500;
   transition: color 0.45s ease;
 }
@@ -220,10 +229,10 @@ h1 {
   position: relative;
   min-height: 160px;
   box-sizing: border-box;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--frame);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
   transition: background 0.45s ease;
   display: flex;
   flex-direction: column;
@@ -261,9 +270,9 @@ h1 {
 .progress-row { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.875rem; }
 
 .dash-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
-.dash-toolbar h2 { margin: 0; font-size: 1.5rem; font-weight: 500; transition: color 0.45s ease; }
+.dash-toolbar h2 { margin: 0; font-size: var(--font-xl); font-weight: 500; transition: color 0.45s ease; }
 .dash-range { min-width: 180px; }
-.dash-big { margin: 0 0 0.8rem; font-size: 2rem; font-weight: 600; transition: color 0.45s ease; }
+.dash-big { margin: 0 0 0.8rem; font-size: var(--font-2xl); font-weight: 600; transition: color 0.45s ease; }
 .dash-main { align-items: start; }
 
 .chat-layout { align-items: start; }
@@ -283,15 +292,15 @@ h1 {
 
 @media (max-width: 640px) {
   main { padding: 1.5rem 1rem; }
-  h1 { font-size: 2rem; }
+  h1 { font-size: var(--font-2xl); }
   .hero { padding-top: 0.5rem; }
 }
 
 .liquid-glass {
   position: relative;
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(var(--blur-sm)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--blur-sm)) saturate(180%);
+  box-shadow: var(--shadow-sm);
   background: var(--glass-bg);
   transform: translateZ(0);
   will-change: transform, backdrop-filter;
@@ -352,11 +361,11 @@ h1 {
 .stage {
   position: relative;
   height: 160px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--frame);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
   transition: background 0.45s ease;
   display: flex;
   align-items: center;
