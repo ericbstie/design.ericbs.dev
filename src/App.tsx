@@ -1,20 +1,23 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Blobs, Button, LiquidGlass, Ripple, ThemeToggle, type Theme } from "./components";
+import { useEffect, useRef, useState } from "react";
+import { Blobs, Ripple, ThemeToggle, type Theme } from "./components";
 import { SiteCursor } from "./cursor";
+import { ToastProvider } from "./ui";
+import { Router, RouteLink } from "./router";
+import { Docs } from "./pages/Docs";
+import { Sample1 } from "./pages/Sample1";
+import { Sample2 } from "./pages/Sample2";
+import { Sample3 } from "./pages/Sample3";
 import "./index.css";
 
 
 type RippleState = { id: number; x: number; y: number; theme: Theme };
 
-
-function Card({ label, children, stage }: { label: string; children?: ReactNode; stage?: ReactNode }) {
-  return (
-    <LiquidGlass className="card" highlight>
-      {stage ?? <div className="stage">{children}</div>}
-      <div className="card-label">{label}</div>
-    </LiquidGlass>
-  );
-}
+const TITLES: Record<string, string> = {
+  "/": "Components",
+  "/sample/1": "Prism",
+  "/sample/2": "Pipelines",
+  "/sample/3": "Aurora",
+};
 
 
 export function App() {
@@ -31,11 +34,8 @@ export function App() {
   }
 
   function onRippleEnd(ended: RippleState) {
-    const newest = ripples[ripples.length - 1] === ended;
-    if (!newest && ripples[0] !== ended) return;
-
     setTheme(ended.theme);
-    setRipples(newest ? [] : ripples.slice(1));
+    setRipples(rs => rs.filter(r => r.id > ended.id));
   }
 
   useEffect(() => {
@@ -43,29 +43,38 @@ export function App() {
     document.documentElement.dataset.glass = glass;
   }, [theme, glass]);
 
+  function renderPage(path: string) {
+    if (path === "/sample/1") return <Sample1 />;
+    if (path === "/sample/2") return <Sample2 />;
+    if (path === "/sample/3") return <Sample3 />;
+    return <Docs glass={glass} onToggle={toggleTheme} />;
+  }
+
   return (
-    <>
+    <ToastProvider>
       <div className="page-bg">
         <Blobs />
       </div>
       {ripples.map(r => (
         <Ripple key={r.id} x={r.x} y={r.y} theme={r.theme} onEnd={() => onRippleEnd(r)} />
       ))}
-      <main>
-        <header>
-          <h1>Components</h1>
-          <ThemeToggle glass={glass} onToggle={toggleTheme} />
-        </header>
-        <div className="grid">
-          <Card label="Button">
-            <Button>Button</Button>
-          </Card>
-          <Card label="ThemeToggle">
-            <ThemeToggle glass={glass} onToggle={toggleTheme} />
-          </Card>
-        </div>
-      </main>
+      <Router>
+        {path => (
+          <main>
+            <header>
+              <h1>{path === "/" ? "Components" : <RouteLink to="/" className="home-link">{TITLES[path] ?? "Components"}</RouteLink>}</h1>
+              <nav className="top-nav" aria-label="Samples">
+                <RouteLink to="/sample/1" aria-current={path === "/sample/1" ? "page" : undefined}>1</RouteLink>
+                <RouteLink to="/sample/2" aria-current={path === "/sample/2" ? "page" : undefined}>2</RouteLink>
+                <RouteLink to="/sample/3" aria-current={path === "/sample/3" ? "page" : undefined}>3</RouteLink>
+                <ThemeToggle glass={glass} onToggle={toggleTheme} />
+              </nav>
+            </header>
+            {renderPage(path)}
+          </main>
+        )}
+      </Router>
       <SiteCursor />
-    </>
+    </ToastProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode, type Ref } from "react";
+import { useEffect, useRef, type CSSProperties, type MouseEvent, type ReactNode, type Ref } from "react";
 
 
 export type Theme = "dark" | "light";
@@ -11,6 +11,10 @@ export const MODE: Record<Theme, { blend: CSSProperties["mixBlendMode"]; op: num
   dark: { blend: "screen", op: 0.4 },
   light: { blend: "multiply", op: 0.6 },
 };
+
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
+}
 
 
 const blobDefs = [
@@ -29,7 +33,9 @@ export function Blobs({ style }: { style?: CSSProperties }) {
     const els = [...ref.current!.children] as HTMLElement[];
 
     let raf = requestAnimationFrame(function tick(t) {
-      const rc = ref.current!.getBoundingClientRect();
+      if (!ref.current) return;
+
+      const rc = ref.current.getBoundingClientRect();
 
       for (const [i, d] of blobDefs.entries()) {
         const r = d.rs * rc.width;
@@ -95,16 +101,6 @@ export function LiquidGlass({
   );
 }
 
-export function Button({ children }: { children: ReactNode }) {
-  return (
-    <button className="liquid-glass button" data-glass-highlight="">
-      <Rim />
-      {children}
-    </button>
-  );
-}
-
-
 export function ThemeIcon({ glass }: { glass: Theme }) {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -141,7 +137,7 @@ export function Ripple({ x, y, theme, onEnd }: { x: number; y: number; theme: Th
 
     const raf = requestAnimationFrame(() =>
       requestAnimationFrame(() => {
-        ref.current!.style.clipPath = `circle(${R}px at ${x}px ${y}px)`;
+        if (ref.current) ref.current.style.clipPath = `circle(${R}px at ${x}px ${y}px)`;
       }),
     );
 
@@ -157,3 +153,85 @@ export function Ripple({ x, y, theme, onEnd }: { x: number; y: number; theme: Th
 }
 
 
+export function GlassCursor({ glass, onToggle }: { glass: Theme; onToggle: ToggleFn }) {
+  const stageRef = useRef<HTMLDivElement>(null);
+  const bubRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const s = useRef({ mx: 80, my: 80, x: 80, y: 80, w: 30, h: 30, tw: 30, th: 30, snapped: false, inside: false });
+
+  function onMouseMove(e: MouseEvent) {
+    const r = stageRef.current!.getBoundingClientRect();
+
+    Object.assign(s.current, { mx: e.clientX - r.left, my: e.clientY - r.top, inside: true });
+  }
+
+  function onMouseLeave() {
+    Object.assign(s.current, { inside: false, snapped: false });
+  }
+
+  function onClick(e: MouseEvent) {
+    if (s.current.snapped) onToggle(e.clientX, e.clientY);
+  }
+
+  useEffect(() => {
+    const st = s.current;
+
+    let raf = requestAnimationFrame(function tick() {
+      if (!stageRef.current || !btnRef.current || !bubRef.current) return;
+
+      const rc = stageRef.current.getBoundingClientRect();
+      const br = btnRef.current.getBoundingClientRect();
+      const b = { cx: br.left - rc.left + br.width / 2, cy: br.top - rc.top + br.height / 2, w: br.width, h: br.height };
+
+      const dx = st.mx - b.cx;
+      const dy = st.my - b.cy;
+      const dist = Math.hypot(dx, dy);
+
+      const snapIn = Math.max(b.w, b.h) / 2 + 16;
+      const snapOut = Math.max(b.w, b.h) / 2 + 44;
+      if (!st.snapped && dist < snapIn) st.snapped = true;
+      if (st.snapped && dist > snapOut) st.snapped = false;
+
+      let tx = st.mx;
+      let ty = st.my;
+      let ease = 0.2;
+
+      if (st.snapped) {
+        const off = Math.min(dist / snapOut, 1) * 9;
+        tx = b.cx + (dx / (dist || 1)) * off;
+        ty = b.cy + (dy / (dist || 1)) * off;
+        ease = 0.12;
+        Object.assign(st, { tw: b.w + 26, th: b.h - 8 });
+      } else {
+        Object.assign(st, { tw: 30, th: 30 });
+      }
+
+      st.x = lerp(st.x, tx, ease);
+      st.y = lerp(st.y, ty, ease);
+      st.w = lerp(st.w, st.tw, 0.18);
+      st.h = lerp(st.h, st.th, 0.18);
+
+      const bub = bubRef.current!.style;
+      bub.width = st.w + "px";
+      bub.height = st.h + "px";
+      bub.borderRadius = st.h / 2 + "px";
+      bub.transform = `translateZ(0) translate(${st.x - st.w / 2}px,${st.y - st.h / 2}px)`;
+      bub.opacity = st.inside ? "1" : "0";
+
+      raf = requestAnimationFrame(tick);
+    });
+
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  return (
+    <div ref={stageRef} className="stage cursor-stage" data-cursor-local onMouseMove={onMouseMove} onMouseLeave={onMouseLeave} onClick={onClick}>
+      <LiquidGlass ref={bubRef} className="bubble bubble-local">
+        <Noise />
+      </LiquidGlass>
+      <button ref={btnRef} className="theme-toggle target" aria-label="Toggle theme">
+        <ThemeIcon glass={glass} />
+      </button>
+    </div>
+  );
+}

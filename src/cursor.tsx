@@ -3,6 +3,8 @@ import { LiquidGlass, Noise } from "./components";
 
 
 const HIGHLIGHT_SELECTOR = "[data-glass-highlight]";
+const SNAP_SELECTOR = "button, a, [data-cursor-snap]";
+const LOCAL_SELECTOR = "[data-cursor-local]";
 
 const WAKE_RANGE = 64;
 const ENGAGE_RANGE = 44;
@@ -130,6 +132,47 @@ export function outlinePath(b: Box) {
 }
 
 
+type SnapBox = { cx: number; cy: number; w: number; h: number };
+
+function snapBox(el: HTMLElement): SnapBox {
+  const r = el.getBoundingClientRect();
+
+  return { cx: r.left + r.width / 2, cy: r.top + r.height / 2, w: r.width, h: r.height };
+}
+
+function snapRange(b: SnapBox, pad: number) {
+  return Math.max(b.w, b.h) / 2 + pad;
+}
+
+function isSnapCandidate(el: HTMLElement) {
+  return !el.closest(HIGHLIGHT_SELECTOR) && !el.closest(LOCAL_SELECTOR);
+}
+
+function nearestAcquirable(mx: number, my: number) {
+  const els = [...document.querySelectorAll<HTMLElement>(SNAP_SELECTOR)].filter(isSnapCandidate);
+
+  return els.reduce<{ el: HTMLElement; dist: number } | null>((best, el) => {
+    const b = snapBox(el);
+    const dist = Math.hypot(mx - b.cx, my - b.cy);
+
+    if (dist >= snapRange(b, 16)) return best;
+    return !best || dist < best.dist ? { el, dist } : best;
+  }, null)?.el ?? null;
+}
+
+function findSnapTarget(mx: number, my: number, current: HTMLElement | null) {
+  const acquired = nearestAcquirable(mx, my);
+  if (acquired) return acquired;
+
+  if (current?.isConnected) {
+    const b = snapBox(current);
+    if (Math.hypot(mx - b.cx, my - b.cy) < snapRange(b, 44)) return current;
+  }
+
+  return null;
+}
+
+
 type Shell = { el: HTMLElement; box: Box; d: number; fade: number; path: string; seen: boolean };
 
 
@@ -144,9 +187,10 @@ export function SiteCursor() {
 
   const s = useRef({
     mx: -100, my: -100, inside: false,
-    x: { x: -100, v: -100 }, y: { x: -100, v: -100 }, size: { x: BUBBLE_SIZE, v: BUBBLE_SIZE }, opacity: 0,
+    x: { x: -100, v: -100 }, y: { x: -100, v: -100 }, w: { x: BUBBLE_SIZE, v: BUBBLE_SIZE }, h: { x: BUBBLE_SIZE, v: BUBBLE_SIZE }, opacity: 0,
     spotX: { x: -100, v: -100 }, spotY: { x: -100, v: -100 }, spotO: 0, spotR: 26,
     boostEl: null as HTMLElement | null, boostO: 0,
+    snap: null as HTMLElement | null,
     shells: new Map<HTMLElement, Shell>(),
   });
 
@@ -154,7 +198,9 @@ export function SiteCursor() {
     const st = s.current;
 
     function onMouseMove(e: globalThis.MouseEvent) {
-      Object.assign(st, { mx: e.clientX, my: e.clientY, inside: true });
+      const local = e.target instanceof Element && e.target.closest(LOCAL_SELECTOR);
+
+      Object.assign(st, { mx: e.clientX, my: e.clientY, inside: !local });
     }
 
     function onMouseLeave() {
@@ -219,11 +265,37 @@ export function SiteCursor() {
       const near = nearestShell();
       const dMin = near ? near.d : Infinity;
       const grown = near ? smooth(dMin / ENGAGE_RANGE) : 1;
+      const onGlass = !!near && dMin < ENGAGE_RANGE;
 
-      glide(st.x, st.mx, 0.35);
-      glide(st.y, st.my, 0.35);
-      glide(st.size, BUBBLE_SIZE * grown, 0.3);
-      st.opacity = lerp(st.opacity, st.inside && grown > 0.1 ? 1 : 0, 0.3);
+      st.snap = st.inside && !onGlass ? findSnapTarget(st.mx, st.my, st.snap) : null;
+
+      let tx = st.mx;
+      let ty = st.my;
+      let tw = BUBBLE_SIZE;
+      let th = BUBBLE_SIZE;
+      let ease = 0.35;
+
+      if (st.snap) {
+        const b = snapBox(st.snap);
+        const dx = st.mx - b.cx;
+        const dy = st.my - b.cy;
+        const dist = Math.hypot(dx, dy);
+
+        const off = Math.min(dist / snapRange(b, 44), 1) * 9;
+        tx = b.cx + (dx / (dist || 1)) * off;
+        ty = b.cy + (dy / (dist || 1)) * off;
+        tw = b.w + 26;
+        th = b.h - 8;
+        ease = 0.2;
+      } else if (onGlass) {
+        tw = th = BUBBLE_SIZE * grown;
+      }
+
+      glide(st.x, tx, ease);
+      glide(st.y, ty, ease);
+      glide(st.w, tw, 0.25);
+      glide(st.h, th, 0.25);
+      st.opacity = lerp(st.opacity, st.inside && (!onGlass || grown > 0.1) ? 1 : 0, 0.3);
 
       st.spotO = lerp(st.spotO, near ? 1 - grown : 0, 0.25);
       glide(st.spotX, st.mx, 0.3);
@@ -235,13 +307,14 @@ export function SiteCursor() {
     }
 
     function render() {
-      const size = Math.max(st.size.x, 0);
+      const w = Math.max(st.w.x, 0);
+      const h = Math.max(st.h.x, 0);
 
       const bub = bubRef.current!.style;
-      bub.width = size + "px";
-      bub.height = size + "px";
-      bub.borderRadius = size / 2 + "px";
-      bub.transform = `translateZ(0) translate(${st.x.x - size / 2}px,${st.y.x - size / 2}px)`;
+      bub.width = w + "px";
+      bub.height = h + "px";
+      bub.borderRadius = h / 2 + "px";
+      bub.transform = `translateZ(0) translate(${st.x.x - w / 2}px,${st.y.x - h / 2}px)`;
       bub.opacity = String(st.opacity);
 
       for (const spot of [spotARef.current!, spotBRef.current!]) {
