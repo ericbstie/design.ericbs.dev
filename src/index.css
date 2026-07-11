@@ -22,6 +22,8 @@
   --spot-color: #fff;
   --spot-core: 0.5;
   --spot-mid: 0.2;
+  --scroll-thumb: rgba(255, 255, 255, 0.22);
+  --scroll-thumb-hover: rgba(255, 255, 255, 0.42);
 }
 :root[data-glass="light"] {
   --glass-bg: rgba(255, 255, 255, 0.22);
@@ -32,6 +34,42 @@
   --spot-color: #131310;
   --spot-core: 0.22;
   --spot-mid: 0.09;
+  --scroll-thumb: rgba(19, 19, 16, 0.24);
+  --scroll-thumb-hover: rgba(19, 19, 16, 0.45);
+}
+
+
+/* ---------- Glassy scrollbar (global, single source of truth) ----------
+   Minimal frosted pill: translucent theme-aware thumb floating over a
+   transparent track. Applies to every scrollable element site-wide. */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb) transparent;
+  }
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background: transparent;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-button {
+  display: none;
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--scroll-thumb);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  min-height: 32px;
+}
+::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--scroll-thumb-hover);
 }
 
 body {
