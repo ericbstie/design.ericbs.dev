@@ -231,7 +231,7 @@ h1 {
 }
 .demo-stage-tall { min-height: 220px; }
 .demo-stage > * { max-width: 100%; }
-.demo-stage .stage { margin: -1.1rem; }
+.demo-stage .stage { margin: -1.1rem; max-width: none; }
 
 .demo-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
 .demo-col { display: flex; flex-direction: column; gap: 0.7rem; }
