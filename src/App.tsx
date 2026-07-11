@@ -61,14 +61,29 @@ export function App() {
       <Router>
         {path => (
           <main>
+            <nav className="theme-nav" aria-label="Theme">
+              <ThemeToggle glass={glass} onToggle={toggleTheme} />
+            </nav>
             <header>
-              <h1>{path === "/" ? "Components" : <RouteLink to="/" className="home-link">{TITLES[path] ?? "Components"}</RouteLink>}</h1>
-              <nav className="top-nav" aria-label="Samples">
-                <RouteLink to="/sample/1" aria-current={path === "/sample/1" ? "page" : undefined}>1</RouteLink>
-                <RouteLink to="/sample/2" aria-current={path === "/sample/2" ? "page" : undefined}>2</RouteLink>
-                <RouteLink to="/sample/3" aria-current={path === "/sample/3" ? "page" : undefined}>3</RouteLink>
-                <ThemeToggle glass={glass} onToggle={toggleTheme} />
-              </nav>
+              <div className="header-left">
+                {path !== "/" && (
+                  <RouteLink to="/" className="nav-arrow">
+                    <span aria-hidden="true">←</span> Components
+                  </RouteLink>
+                )}
+                <h1>{TITLES[path] ?? "Components"}</h1>
+              </div>
+              {path === "/" ? (
+                <RouteLink to="/sample/1" className="nav-arrow">
+                  Go to demos <span aria-hidden="true">→</span>
+                </RouteLink>
+              ) : (
+                <nav className="top-nav" aria-label="Demos">
+                  <RouteLink to="/sample/1" aria-current={path === "/sample/1" ? "page" : undefined}>1</RouteLink>
+                  <RouteLink to="/sample/2" aria-current={path === "/sample/2" ? "page" : undefined}>2</RouteLink>
+                  <RouteLink to="/sample/3" aria-current={path === "/sample/3" ? "page" : undefined}>3</RouteLink>
+                </nav>
+              )}
             </header>
             {renderPage(path)}
           </main>
