@@ -229,7 +229,7 @@ h1 {
   position: relative;
   min-height: 160px;
   box-sizing: border-box;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius);
   background: var(--frame);
   backdrop-filter: blur(var(--blur-md));
   -webkit-backdrop-filter: blur(var(--blur-md));
@@ -361,7 +361,7 @@ h1 {
 .stage {
   position: relative;
   height: 160px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius);
   overflow: hidden;
   background: var(--frame);
   backdrop-filter: blur(var(--blur-md));

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { LiquidGlass } from "../components";
-import { Button, Tag } from "../ui";
+import { Button, Link, Progress, Tag } from "../ui";
 import "./theme.css";
 
 
@@ -182,16 +182,12 @@ const COLOR_TOKENS = [
   "--control-bg", "--control-hover", "--control-active", "--divider",
   "--text", "--text-dim", "--accent", "--accent-strong", "--accent-tint",
   "--danger", "--success",
-  "--blue-3", "--blue-5", "--blue-8", "--blue-9",
-  "--spectrum-orange", "--spectrum-amber", "--spectrum-pink",
-  "--spectrum-teal", "--spectrum-blue", "--spectrum-violet",
 ];
 
 const DIM_TOKENS = [
-  "--radius-sm", "--radius-md", "--radius-lg", "--radius-pill",
-  "--font-xs", "--font-sm", "--font-md", "--font-lg", "--font-xl", "--font-2xl", "--font-3xl",
-  "--blur-sm", "--blur-md", "--blur-lg",
-  "--shadow-sm", "--shadow-md", "--shadow-lg",
+  "--radius",
+  "--font-xs", "--font-sm", "--font-md", "--font-xl", "--font-3xl",
+  "--blur-sm", "--shadow-sm",
 ];
 
 
@@ -213,7 +209,7 @@ function Card({
   label, span, tall, bodyClass, children,
 }: {
   label: string;
-  span?: 2 | 3;
+  span?: 2 | 4;
   tall?: boolean;
   bodyClass?: string;
   children: ReactNode;
@@ -223,6 +219,68 @@ function Card({
       <div className={`tstage ${tall ? "tstage-tall" : ""} ${bodyClass ?? ""}`}>{children}</div>
       <div className="card-label">{label}</div>
     </LiquidGlass>
+  );
+}
+
+
+// ---------- Block: Color — one accent family + status, each shade shown in use ----------
+
+function noNav(e: MouseEvent<HTMLAnchorElement>) {
+  e.preventDefault();
+}
+
+function RoleRow({
+  name, use, snap, copied, copy, badge, children,
+}: {
+  name: string;
+  use: string;
+  snap: Snapshot;
+  copied: string | null;
+  copy: CopyFn;
+  badge?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="role-row">
+      <Chip name={name} snap={snap} copied={copied} copy={copy} swatch badge={badge} />
+      <span className="role-use">{use}</span>
+      <span className="role-demo">{children}</span>
+    </div>
+  );
+}
+
+function ColorRoles({ snap, copied, copy }: { snap: Snapshot; copied: string | null; copy: CopyFn }) {
+  const c = snap.colors;
+  const stage = stageOf(c);
+
+
+  const accent = c["--accent"];
+  const danger = c["--danger"];
+  const success = c["--success"];
+
+
+  return (
+    <Card label="Color" span={2} bodyClass="stage-roles">
+      <RoleRow name="--accent" use="links · focus · selected" snap={snap} copied={copied} copy={copy}
+        badge={accent && <Badge fg={accent} bg={stage} large />}>
+        <Link href="#" tabIndex={-1} onClick={noNav}>Link</Link>
+      </RoleRow>
+      <RoleRow name="--accent-strong" use="progress · emphasis" snap={snap} copied={copied} copy={copy}>
+        <span className="role-progress"><Progress value={62} /></span>
+      </RoleRow>
+      <RoleRow name="--accent-tint" use="primary fill · selection" snap={snap} copied={copied} copy={copy}>
+        <Button variant="primary" size="sm" tabIndex={-1}>Primary</Button>
+      </RoleRow>
+      <hr className="role-divider" />
+      <RoleRow name="--success" use="positive" snap={snap} copied={copied} copy={copy}
+        badge={success && <Badge fg={success} bg={tintOver(success, 0.16, stage)} />}>
+        <Tag variant="success">Saved</Tag>
+      </RoleRow>
+      <RoleRow name="--danger" use="errors · destructive" snap={snap} copied={copied} copy={copy}
+        badge={danger && <Badge fg={danger} bg={tintOver(danger, 0.16, stage)} />}>
+        <Tag variant="danger">Failed</Tag>
+      </RoleRow>
+    </Card>
   );
 }
 
@@ -257,63 +315,6 @@ function ModeMatrix() {
     <Card label="Modes" span={2} tall>
       <div className="mode-grid">
         {MODES.map(m => <ModeTile key={`${m.theme}-${m.glass}`} {...m} />)}
-      </div>
-    </Card>
-  );
-}
-
-
-// ---------- Block: Color roles — the whole chromatic API ----------
-
-const ACCENT_RAMP = ["--blue-3", "--blue-5", "--blue-8", "--blue-9"];
-
-function ColorRoles({ snap, copied, copy }: { snap: Snapshot; copied: string | null; copy: CopyFn }) {
-  const c = snap.colors;
-  const stage = stageOf(c);
-
-
-  const accent = c["--accent"];
-  const danger = c["--danger"];
-  const success = c["--success"];
-
-
-  return (
-    <Card label="Color" span={2} bodyClass="stage-spread">
-      <div className="tk-row">
-        <Chip name="--accent" snap={snap} copied={copied} copy={copy} swatch
-          badge={accent && <Badge fg={accent} bg={stage} large />} />
-        <Chip name="--accent-strong" snap={snap} copied={copied} copy={copy} swatch />
-        <Chip name="--accent-tint" snap={snap} copied={copied} copy={copy} swatch />
-        <Chip name="--success" snap={snap} copied={copied} copy={copy} swatch
-          badge={success && <Badge fg={success} bg={tintOver(success, 0.16, stage)} />} />
-        <Chip name="--danger" snap={snap} copied={copied} copy={copy} swatch
-          badge={danger && <Badge fg={danger} bg={tintOver(danger, 0.16, stage)} />} />
-      </div>
-      <div className="tk-applied">
-        <Button variant="primary" tabIndex={-1}>Primary</Button>
-        <Tag variant="success">Success</Tag>
-        <Tag variant="danger">Danger</Tag>
-        <a className="tk-link" href="#" tabIndex={-1} onClick={e => e.preventDefault()}>Link</a>
-      </div>
-      <div className="ramp">
-        <span className="ramp-label">--accent draws from Open&nbsp;Color</span>
-        {ACCENT_RAMP.map(name => {
-          const active = !!snap.hex[name] && snap.hex[name] === snap.hex["--accent"];
-
-          return (
-            <button
-              key={name}
-              type="button"
-              className={`ramp-cell ${active ? "ramp-active" : ""} ${copied === name ? "tk-copied" : ""}`}
-              style={{ "--sw": `var(${name})` } as CSSProperties}
-              onClick={e => copy(name, snap.hex[name] ?? "", e.shiftKey || e.altKey)}
-              title={`click → var(${name})   ·   ⇧click → ${snap.hex[name] ?? ""}`}
-            >
-              <span className="ramp-sw" />
-              <code>{copied === name ? "copied ✓" : active ? "= --accent" : name.replace("--", "")}</code>
-            </button>
-          );
-        })}
       </div>
     </Card>
   );
@@ -355,11 +356,11 @@ function SurfaceText({ snap, copied, copy }: { snap: Snapshot; copied: string | 
 }
 
 
-// ---------- Block: Glass anatomy — the surface is a stack, not a variable ----------
+// ---------- Block: Glass — the material recipe: fill · blur · radius · shadow ----------
 
-function GlassAnatomy({ snap, copied, copy }: { snap: Snapshot; copied: string | null; copy: CopyFn }) {
+function GlassRecipe({ snap, copied, copy }: { snap: Snapshot; copied: string | null; copy: CopyFn }) {
   return (
-    <Card label="Glass" tall>
+    <Card label="Glass" span={2}>
       <span className="glass-field" />
       <div className="glass-demo">
         <LiquidGlass className="glass-sample" highlight />
@@ -367,79 +368,8 @@ function GlassAnatomy({ snap, copied, copy }: { snap: Snapshot; copied: string |
       <div className="tk-row glass-row">
         <Chip name="--glass-bg" snap={snap} copied={copied} copy={copy} swatch />
         <Chip name="--blur-sm" snap={snap} copied={copied} copy={copy} />
+        <Chip name="--radius" snap={snap} copied={copied} copy={copy} />
         <Chip name="--shadow-sm" snap={snap} copied={copied} copy={copy} />
-      </div>
-    </Card>
-  );
-}
-
-
-// ---------- Block: Radius ----------
-
-const RADII = ["--radius-sm", "--radius-md", "--radius-lg", "--radius-pill"];
-
-function RadiusScale({ snap, copied, copy }: { snap: Snapshot; copied: string | null; copy: CopyFn }) {
-  return (
-    <Card label="Radius">
-      <ul className="radius-list">
-        {RADII.map(name => (
-          <li key={name}>
-            <button
-              type="button"
-              className={`radius-item ${copied === name ? "tk-copied" : ""}`}
-              onClick={e => copy(name, snap.dims[name] ?? "", e.shiftKey || e.altKey)}
-              title={`click → var(${name})   ·   ⇧click → ${snap.dims[name] ?? ""}`}
-            >
-              <span className="radius-box" style={{ borderRadius: `var(${name})` }} />
-              <code className="radius-name">{name}</code>
-              <span className="radius-px">{copied === name ? "copied ✓" : snap.dims[name]}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-    </Card>
-  );
-}
-
-
-// ---------- Block: Elevation — frost depth (blur) and lift (shadow) ----------
-
-const BLURS = ["--blur-sm", "--blur-md", "--blur-lg"];
-const SHADOWS = ["--shadow-sm", "--shadow-md", "--shadow-lg"];
-
-function Elevation({ snap, copied, copy }: { snap: Snapshot; copied: string | null; copy: CopyFn }) {
-  return (
-    <Card label="Elevation" span={2} tall>
-      <span className="elev-field" />
-      <div className="elev-row">
-        {BLURS.map(name => (
-          <button
-            key={name}
-            type="button"
-            className={`elev-cell ${copied === name ? "tk-copied" : ""}`}
-            style={{ backdropFilter: `blur(var(${name})) saturate(180%)`, WebkitBackdropFilter: `blur(var(${name})) saturate(180%)` } as CSSProperties}
-            onClick={e => copy(name, snap.dims[name] ?? "", e.shiftKey || e.altKey)}
-            title={`click → var(${name})   ·   ⇧click → ${snap.dims[name] ?? ""}`}
-          >
-            <code>{name}</code>
-            <span className="elev-meta">{copied === name ? "copied ✓" : snap.dims[name]}</span>
-          </button>
-        ))}
-      </div>
-      <div className="elev-row">
-        {SHADOWS.map(name => (
-          <button
-            key={name}
-            type="button"
-            className={`elev-cell shadow-cell ${copied === name ? "tk-copied" : ""}`}
-            style={{ boxShadow: `var(${name})` }}
-            onClick={e => copy(name, snap.dims[name] ?? "", e.shiftKey || e.altKey)}
-            title={`click → var(${name})   ·   ⇧click → ${snap.dims[name] ?? ""}`}
-          >
-            <code>{name}</code>
-            <span className="elev-meta elev-shadow-val">{copied === name ? "copied ✓" : snap.dims[name]}</span>
-          </button>
-        ))}
       </div>
     </Card>
   );
@@ -450,9 +380,7 @@ function Elevation({ snap, copied, copy }: { snap: Snapshot; copied: string | nu
 
 const TYPE = [
   { name: "--font-3xl", word: "Aa" },
-  { name: "--font-2xl", word: "Aa" },
   { name: "--font-xl", word: "The quick brown fox" },
-  { name: "--font-lg", word: "The quick brown fox" },
   { name: "--font-md", word: "The quick brown fox jumps over" },
   { name: "--font-sm", word: "The quick brown fox jumps over the lazy dog" },
   { name: "--font-xs", word: "The quick brown fox jumps over the lazy dog" },
@@ -460,7 +388,7 @@ const TYPE = [
 
 function TypeScale({ snap, copied, copy }: { snap: Snapshot; copied: string | null; copy: CopyFn }) {
   return (
-    <Card label="Type" span={2} tall>
+    <Card label="Type" span={4}>
       <ul className="type-list">
         {TYPE.map(({ name, word }) => (
           <li key={name}>
@@ -468,7 +396,7 @@ function TypeScale({ snap, copied, copy }: { snap: Snapshot; copied: string | nu
               type="button"
               className={`type-row ${copied === name ? "tk-copied" : ""}`}
               onClick={e => copy(name, snap.dims[name] ?? "", e.shiftKey || e.altKey)}
-              title={`click → var(${name})`}
+              title={`click → var(${name})   ·   ⇧click → ${snap.dims[name] ?? ""}`}
             >
               <span className="type-specimen" style={{ fontSize: `var(${name})` }}>{word}</span>
               <code className="type-tag">{name} <i>{copied === name ? "copied ✓" : snap.dims[name]}</i></code>
@@ -477,37 +405,6 @@ function TypeScale({ snap, copied, copy }: { snap: Snapshot; copied: string | nu
         ))}
       </ul>
     </Card>
-  );
-}
-
-
-// ---------- Block: Spectrum — the prismatic field the glass floats over ----------
-
-const SPECTRUM = [
-  "--spectrum-orange", "--spectrum-amber", "--spectrum-pink",
-  "--spectrum-teal", "--spectrum-blue", "--spectrum-violet",
-];
-
-function Spectrum({ snap, copied, copy }: { snap: Snapshot; copied: string | null; copy: CopyFn }) {
-  return (
-    <div className="spectrum">
-      <span className="spectrum-label">Spectrum</span>
-      <div className="spectrum-strip">
-        {SPECTRUM.map(name => (
-          <button
-            key={name}
-            type="button"
-            className={`spectrum-cell ${copied === name ? "tk-copied" : ""}`}
-            style={{ "--sw": `var(${name})` } as CSSProperties}
-            onClick={e => copy(name, snap.hex[name] ?? "", e.shiftKey || e.altKey)}
-            title={`click → var(${name})   ·   ⇧click → ${snap.hex[name] ?? ""}`}
-          >
-            <code>{copied === name ? "copied ✓" : name}</code>
-            <span className="spectrum-hex">{snap.hex[name]}</span>
-          </button>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -521,20 +418,17 @@ export function ThemeSection() {
 
   return (
     <section className="theme-section" aria-label="Theme">
-      <div className="theme-head">
-        <h2 className="theme-title">Theme</h2>
+      <div className="block-head">
+        <h2 className="block-title">Theme</h2>
         <span className="theme-hint">click to copy <code>var(--token)</code> · shift-click for its value</span>
       </div>
       <div className="grid theme-grid">
-        <ModeMatrix />
         <ColorRoles snap={snap} copied={copied} copy={copy} />
+        <ModeMatrix />
         <SurfaceText snap={snap} copied={copied} copy={copy} />
-        <GlassAnatomy snap={snap} copied={copied} copy={copy} />
-        <RadiusScale snap={snap} copied={copied} copy={copy} />
-        <Elevation snap={snap} copied={copied} copy={copy} />
+        <GlassRecipe snap={snap} copied={copied} copy={copy} />
         <TypeScale snap={snap} copied={copied} copy={copy} />
       </div>
-      <Spectrum snap={snap} copied={copied} copy={copy} />
     </section>
   );
 }

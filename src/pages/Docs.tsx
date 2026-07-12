@@ -373,28 +373,30 @@ export function Docs({ glass, onToggle }: { glass: Theme; onToggle: ToggleFn }) 
   return (
     <>
       <ThemeSection />
-      <div className="theme-head components-head">
-        <h2 className="theme-title">Components</h2>
-      </div>
-      <div className="docs-intro">
-        <Input
-          type="search"
-          name="component-search"
-          aria-label="Search components"
-          placeholder={`Search ${DEMOS.length} components…`}
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          className="docs-search"
-        />
-      </div>
-      <div className="grid">
-        {visible.map(d => (
-          <Demo key={d.name} label={d.name} tall={d.tall}>
-            {d.render(glass, onToggle)}
-          </Demo>
-        ))}
-      </div>
-      {visible.length === 0 && <p className="docs-empty">No components match “{query}”.</p>}
+      <section aria-label="Components">
+        <div className="block-head">
+          <h2 className="block-title">Components</h2>
+        </div>
+        <div className="docs-intro">
+          <Input
+            type="search"
+            name="component-search"
+            aria-label="Search components"
+            placeholder={`Search ${DEMOS.length} components…`}
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            className="docs-search"
+          />
+        </div>
+        <div className="grid">
+          {visible.map(d => (
+            <Demo key={d.name} label={d.name} tall={d.tall}>
+              {d.render(glass, onToggle)}
+            </Demo>
+          ))}
+        </div>
+        {visible.length === 0 && <p className="docs-empty">No components match “{query}”.</p>}
+      </section>
     </>
   );
 }

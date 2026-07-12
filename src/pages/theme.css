@@ -1,24 +1,26 @@
 /* ============================================================================
-   Theme section — a live, copyable map of the design tokens.
+   Theme block — a live, copyable map of the design tokens.
    Every swatch is painted from the token itself, so it re-tints the instant
    the page flips data-theme / data-glass. Labels are the tokens, as applied.
    ============================================================================ */
 
 .theme-section {
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
-  margin-bottom: 3rem;
+  /* nested elements sit one padding step inside the theme radius */
+  --radius-inner: calc(var(--radius) - 4px);
+  margin-bottom: 4rem;
 }
 
-.theme-head {
+.block-head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.5rem 1rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
-.theme-title {
+.block-title {
   margin: 0;
-  font-size: var(--font-2xl);
+  font-size: var(--font-3xl);
   font-weight: 500;
   transition: color 0.45s ease;
 }
@@ -31,23 +33,19 @@
   font-size: 0.95em;
 }
 
-.theme-grid {
-  margin-bottom: 1rem;
-}
-
 
 /* ---------- Card shell (shares the component-demo language) ---------- */
 
 .tcard { grid-column: span 1; display: flex; flex-direction: column; }
 .tcard-span-2 { grid-column: span 2; }
-.tcard-span-3 { grid-column: span 3; }
+.tcard-span-4 { grid-column: 1 / -1; }
 
 .tstage {
   position: relative;
   flex: 1;
   min-height: 150px;
   box-sizing: border-box;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius);
   background: var(--frame);
   backdrop-filter: blur(var(--blur-md));
   -webkit-backdrop-filter: blur(var(--blur-md));
@@ -57,11 +55,10 @@
   flex-direction: column;
   gap: 0.85rem;
   justify-content: center;
-  transition: background 0.45s ease;
 }
 .tstage-tall { min-height: 208px; }
 /* content sits above any decorative field */
-.tstage > *:not(.surface-field):not(.glass-field):not(.elev-field) {
+.tstage > *:not(.surface-field):not(.glass-field) {
   position: relative;
   z-index: 1;
 }
@@ -76,7 +73,7 @@
   align-items: center;
   gap: 0.5rem;
   border: 1px solid var(--divider);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-inner);
   padding: 0.32rem 0.5rem;
   background: var(--control-bg);
   color: var(--text);
@@ -132,13 +129,41 @@
 
 /* Keyboard focus for every copyable element */
 .tk:focus-visible,
-.ramp-cell:focus-visible,
-.radius-item:focus-visible,
-.elev-cell:focus-visible,
-.type-row:focus-visible,
-.spectrum-cell:focus-visible {
+.type-row:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+
+/* ---------- Color: role rows — shade · use case · live example ---------- */
+
+.stage-roles { gap: 0.55rem; }
+
+.role-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.role-row .tk { min-width: 13.5rem; }
+.role-use {
+  flex: 1;
+  min-width: 7rem;
+  font-size: var(--font-xs);
+  color: var(--text-dim);
+}
+.role-demo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+.role-progress { display: block; width: 96px; }
+.role-divider {
+  width: 100%;
+  border: none;
+  border-top: 1px solid var(--divider);
+  margin: 0.1rem 0;
 }
 
 
@@ -154,7 +179,7 @@
 .mode-tile {
   position: relative;
   overflow: hidden;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius);
   background: var(--base);
   min-height: 96px;
   display: flex;
@@ -180,12 +205,11 @@
   width: 100%;
   max-width: 168px;
   padding: 0.7rem 0.75rem;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-inner);
 }
 .mode-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
 .mode-bar { height: 6px; border-radius: 3px; }
 .mode-bar-text { width: 72%; background: var(--text); opacity: 0.92; }
-.mode-bar-dim { width: 48%; background: var(--text-dim); }
 .mode-tag {
   margin-top: 4px;
   display: flex;
@@ -200,13 +224,13 @@
 
 /* ---------- Shared decorative field (translucency backdrop) ---------- */
 
-.surface-field, .glass-field, .elev-field {
+.surface-field, .glass-field {
   position: absolute;
   inset: 0;
   z-index: 0;
   border-radius: inherit;
 }
-.surface-field::before, .glass-field::before, .elev-field::before {
+.surface-field::before, .glass-field::before {
   content: "";
   position: absolute;
   inset: -30%;
@@ -235,93 +259,27 @@
 .text-full .tk, .text-dim .tk { font-weight: 400; }
 
 
-/* ---------- Glass anatomy ---------- */
+/* ---------- Glass: the material recipe ---------- */
 
 .glass-demo {
   display: flex;
   align-items: center;
   justify-content: center;
   flex: 1;
-  min-height: 70px;
+  min-height: 64px;
 }
 .glass-sample {
-  width: 58%;
-  max-width: 180px;
-  height: 58px;
-  border-radius: var(--radius-md);
+  width: 46%;
+  max-width: 200px;
+  height: 56px;
+  border-radius: var(--radius);
 }
 .glass-row { justify-content: center; gap: 0.4rem; }
 
 
-/* ---------- Radius ---------- */
-
-.radius-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  justify-content: center;
-  height: 100%;
-}
-.radius-item {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  width: 100%;
-  border: none;
-  background: none;
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: inherit;
-  padding: 0.28rem 0.4rem;
-  border-radius: var(--radius-sm);
-  transition: background 0.15s ease;
-}
-.radius-item:hover { background: var(--control-bg); }
-.radius-box {
-  width: 38px;
-  height: 38px;
-  flex: none;
-  border: 1.5px solid var(--accent);
-  background: var(--accent-tint);
-}
-.radius-name { font-family: var(--mono); font-size: 0.72rem; }
-.radius-px { font-family: var(--mono); font-size: 0.66rem; color: var(--text-dim); margin-left: auto; }
-.radius-item.tk-copied .radius-px { color: var(--accent); }
-
-
-/* ---------- Elevation: blur depth + drop shadow ---------- */
-
-.elev-row { display: flex; gap: 0.55rem; position: relative; flex: 1; }
-.elev-cell {
-  flex: 1;
-  min-width: 0;
-  border: 1px solid var(--divider);
-  border-radius: var(--radius-md);
-  background: var(--glass-bg);
-  color: var(--text);
-  font: inherit;
-  cursor: inherit;
-  padding: 0.7rem 0.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-}
-.elev-cell code { font-family: var(--mono); font-size: 0.7rem; }
-.elev-meta { font-family: var(--mono); font-size: 0.62rem; color: var(--text-dim); text-align: center; }
-.elev-shadow-val { font-size: 0.55rem; line-height: 1.25; max-width: 15ch; }
-.shadow-cell { background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none; }
-.elev-cell.tk-copied { border-color: var(--accent); }
-
-
 /* ---------- Type scale ---------- */
 
-.type-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+.type-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; max-width: 46rem; }
 .type-row {
   display: flex;
   align-items: baseline;
@@ -335,7 +293,7 @@
   text-align: left;
   cursor: inherit;
   padding: 0.28rem 0.35rem;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-inner);
   transition: background 0.15s ease;
 }
 .type-row:hover { background: var(--control-bg); }
@@ -357,112 +315,20 @@
 .type-row.tk-copied .type-tag { color: var(--accent); }
 
 
-/* ---------- Applied row (real components using the tokens) ---------- */
-
-.tk-applied {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.6rem;
-}
-.tk-link {
-  color: var(--accent);
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent);
-  text-underline-offset: 3px;
-  font-size: var(--font-sm);
-}
-
-
-/* ---------- Primitive ramp (the accent's Open Color source) ---------- */
-
-.stage-spread { justify-content: space-between; }
-
-.ramp { display: flex; align-items: stretch; gap: 0.45rem; }
-.ramp-label {
-  align-self: center;
-  max-width: 5.5rem;
-  font-family: var(--mono);
-  font-size: 0.62rem;
-  line-height: 1.25;
-  color: var(--text-dim);
-}
-.ramp-cell {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  border: none;
-  background: none;
-  color: var(--text-dim);
-  font: inherit;
-  cursor: inherit;
-}
-.ramp-sw { height: 26px; border-radius: 6px; border: 1px solid var(--divider); background: var(--sw); }
-.ramp-cell code { font-family: var(--mono); font-size: 0.6rem; text-align: center; }
-.ramp-cell.tk-copied code { color: var(--accent); }
-/* mark the ramp stop --accent currently resolves to (flips per theme) */
-.ramp-active .ramp-sw { outline: 2px solid var(--accent); outline-offset: 2px; }
-.ramp-active code { color: var(--accent); font-weight: 600; }
-
-
-/* ---------- Spectrum strip (the prismatic field, tokenized) ---------- */
-
-.spectrum { display: flex; flex-direction: column; gap: 0.55rem; }
-.spectrum-label {
-  font-family: var(--mono);
-  font-size: var(--font-sm);
-  color: var(--text-dim);
-}
-.spectrum-strip {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 0.5rem;
-}
-.spectrum-cell {
-  position: relative;
-  height: 54px;
-  border: none;
-  border-radius: var(--radius-md);
-  background: linear-gradient(var(--sw), var(--sw));
-  color: #fff;
-  font: inherit;
-  cursor: inherit;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: flex-start;
-  gap: 1px;
-  padding: 0.45rem 0.55rem;
-  overflow: hidden;
-}
-/* scrim keeps white labels legible on the lighter hues (amber, teal) */
-.spectrum-cell::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(transparent 42%, rgba(0, 0, 0, 0.42));
-  pointer-events: none;
-}
-.spectrum-cell code, .spectrum-hex { position: relative; z-index: 1; }
-.spectrum-cell code { font-family: var(--mono); font-size: 0.64rem; font-weight: 600; }
-.spectrum-hex { font-family: var(--mono); font-size: 0.6rem; opacity: 0.9; }
-
-
 /* ---------- Responsive: collapse spans on narrow viewports ---------- */
 
 @media (max-width: 620px) {
-  .tcard-span-2, .tcard-span-3 { grid-column: span 1; }
+  .tcard-span-2 { grid-column: span 1; }
   .mode-grid { grid-template-columns: 1fr; }
-  .spectrum-strip { grid-template-columns: repeat(3, 1fr); }
+  .block-title { font-size: var(--font-2xl); }
+  .role-row .tk { min-width: 0; }
 }
 
 
 /* ---------- Accessibility: degrade the glass on request ---------- */
 
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-  .tstage, .elev-cell, .tk { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .tstage, .tk { backdrop-filter: none; -webkit-backdrop-filter: none; }
   .tstage { background: var(--surface); }
-  .surface-field::before, .glass-field::before, .elev-field::before, .mode-blob { opacity: 0.2; }
+  .surface-field::before, .glass-field::before, .mode-blob { opacity: 0.2; }
 }
