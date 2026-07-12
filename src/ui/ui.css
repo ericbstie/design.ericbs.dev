@@ -176,8 +176,9 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
   -webkit-backdrop-filter: blur(64px) saturate(200%);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
   padding: 0.35rem;
-  animation: ui-pop 0.18s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
+.ui-popover[data-state="open"] { animation: ui-pop 0.18s cubic-bezier(0.2, 0.8, 0.3, 1); }
+.ui-popover[data-state="closed"] { animation: ui-pop-out 0.16s cubic-bezier(0.4, 0, 1, 1) forwards; }
 .ui-popover::before,
 .ui-popover::after {
   content: "";
@@ -208,6 +209,10 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
 @keyframes ui-pop {
   from { opacity: 0; transform: translateY(-4px) scale(0.98); }
   to { opacity: 1; transform: none; }
+}
+@keyframes ui-pop-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(-4px) scale(0.98); }
 }
 
 .ui-option {
@@ -295,7 +300,11 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
   bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  white-space: nowrap;
+  width: max-content;
+  max-width: min(16rem, 90vw);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
   border-radius: 8px;
   padding: 0.35rem 0.7rem;
   font-size: var(--ui-font-xs);
@@ -305,7 +314,16 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
   -webkit-backdrop-filter: blur(30px) saturate(180%);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   pointer-events: none;
-  animation: ui-pop 0.15s ease;
+}
+.ui-tooltip[data-state="open"] { animation: ui-tooltip-in 0.15s ease; }
+.ui-tooltip[data-state="closed"] { animation: ui-tooltip-out 0.14s ease forwards; }
+@keyframes ui-tooltip-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: translateX(-50%); }
+}
+@keyframes ui-tooltip-out {
+  from { opacity: 1; transform: translateX(-50%); }
+  to { opacity: 0; transform: translateX(-50%) translateY(4px) scale(0.98); }
 }
 
 
@@ -336,11 +354,16 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
   -webkit-backdrop-filter: blur(30px) saturate(180%);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
   pointer-events: auto;
-  animation: ui-toast-in 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
+.ui-toast[data-state="open"] { animation: ui-toast-in 0.3s cubic-bezier(0.2, 0.8, 0.3, 1); }
+.ui-toast[data-state="closed"] { animation: ui-toast-out 0.25s cubic-bezier(0.4, 0, 1, 1) forwards; }
 @keyframes ui-toast-in {
   from { opacity: 0; transform: translateY(12px) scale(0.97); }
   to { opacity: 1; transform: none; }
+}
+@keyframes ui-toast-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(12px) scale(0.97); }
 }
 .ui-toast-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--accent); }
 .ui-toast-dot-success { background: var(--success); }
@@ -412,30 +435,13 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
   to { transform: translate(-45%, 45%); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ui-skeleton::after, .ui-shimmer-line::after, .ui-shimmer-label { animation: none; }
+  .ui-skeleton::after, .ui-shimmer-line::after,
+  .ui-popover[data-state], .ui-tooltip[data-state], .ui-toast[data-state] { animation: none; }
 }
 
 
-/* ---------- Chat shimmer ---------- */
-.ui-chat-shimmer { display: flex; gap: 0.7rem; align-items: flex-start; }
-.ui-shimmer-avatar { width: 30px; height: 30px; flex: none; border-radius: 50%; background: var(--accent-tint); }
-.ui-shimmer-body { flex: 1; min-width: 0; }
-.ui-shimmer-label {
-  display: inline-block;
-  margin-bottom: 0.45rem;
-  font-size: var(--ui-font-xs);
-  font-weight: 600;
-  background: linear-gradient(90deg, var(--text-dim) 30%, var(--text) 50%, var(--text-dim) 70%);
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: ui-shimmer-text 1.6s linear infinite;
-}
-@keyframes ui-shimmer-text {
-  from { background-position: 150% 0; }
-  to { background-position: -150% 0; }
-}
+/* ---------- Chat shimmer (typing lines primitive) ---------- */
+.ui-chat-shimmer { display: flex; flex-direction: column; width: 100%; }
 .ui-shimmer-line {
   position: relative;
   height: 10px;
@@ -443,6 +449,7 @@ textarea.ui-control { resize: vertical; min-height: 84px; }
   background: var(--control-bg);
   overflow: hidden;
 }
+:root[data-glass="light"] .ui-shimmer-line { background: rgba(19, 19, 16, 0.1); }
 .ui-shimmer-line + .ui-shimmer-line { margin-top: 8px; }
 .ui-shimmer-line::after {
   content: "";

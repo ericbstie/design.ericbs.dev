@@ -13,6 +13,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Button, Label, Tag } from "./primitives";
+import { usePresence } from "./presence";
 
 
 export function Field({ label, hint, error, children, htmlFor }: {
@@ -82,7 +83,9 @@ function usePopover(onClose: () => void) {
 
 // Portaled to <body> so the popover escapes the transformed .liquid-glass cards;
 // only outside those does its backdrop-filter frost the real page behind it.
-function Popover({ anchorRef, popoverRef, className = "", role, label, children }: {
+// `usePresence` keeps it mounted through the leave animation after `open` flips false.
+function Popover({ open, anchorRef, popoverRef, className = "", role, label, children }: {
+  open: boolean;
   anchorRef: RefObject<HTMLDivElement | null>;
   popoverRef: RefObject<HTMLDivElement | null>;
   className?: string;
@@ -90,9 +93,14 @@ function Popover({ anchorRef, popoverRef, className = "", role, label, children 
   label?: string;
   children: ReactNode;
 }) {
+  const { present, status } = usePresence(open, popoverRef);
+
   const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
 
+
   useLayoutEffect(() => {
+    if (!present) return;
+
     function place() {
       const anchor = anchorRef.current;
       if (!anchor) return;
@@ -109,10 +117,10 @@ function Popover({ anchorRef, popoverRef, className = "", role, label, children 
       window.removeEventListener("scroll", place, true);
       window.removeEventListener("resize", place);
     };
-  }, [anchorRef]);
+  }, [present, anchorRef]);
 
 
-  if (!rect) return null;
+  if (!present || !rect) return null;
 
   return createPortal(
     <div
@@ -120,6 +128,7 @@ function Popover({ anchorRef, popoverRef, className = "", role, label, children 
       className={`ui-popover ${className}`}
       role={role}
       aria-label={label}
+      data-state={status}
       style={{ position: "fixed", top: rect.top, left: rect.left, minWidth: rect.width }}
     >
       {children}
@@ -200,27 +209,25 @@ export function Select({ options, value, onChange, placeholder = "Select…", id
         <span className={`ui-select-value ${selected ? "" : "ui-select-placeholder"}`}>{selected?.label ?? placeholder}</span>
         <Chevron />
       </button>
-      {open && (
-        <Popover anchorRef={anchorRef} popoverRef={popoverRef}>
-          <ul className="ui-listbox" role="listbox" id={listId}>
-            {options.map((o, i) => (
-              <li
-                key={o.value}
-                id={`${listId}-${i}`}
-                className="ui-option"
-                role="option"
-                aria-selected={o.value === value}
-                data-active={i === nav.active}
-                onPointerEnter={() => nav.setActive(i)}
-                onClick={() => pick(i)}
-              >
-                <CheckMark visible={o.value === value} />
-                {o.label}
-              </li>
-            ))}
-          </ul>
-        </Popover>
-      )}
+      <Popover open={open} anchorRef={anchorRef} popoverRef={popoverRef}>
+        <ul className="ui-listbox" role="listbox" id={listId}>
+          {options.map((o, i) => (
+            <li
+              key={o.value}
+              id={`${listId}-${i}`}
+              className="ui-option"
+              role="option"
+              aria-selected={o.value === value}
+              data-active={i === nav.active}
+              onPointerEnter={() => nav.setActive(i)}
+              onClick={() => pick(i)}
+            >
+              <CheckMark visible={o.value === value} />
+              {o.label}
+            </li>
+          ))}
+        </ul>
+      </Popover>
     </div>
   );
 }
@@ -268,27 +275,25 @@ export function MultiSelect({ options, value, onChange, placeholder = "Select…
           )}
         <Chevron />
       </button>
-      {open && (
-        <Popover anchorRef={anchorRef} popoverRef={popoverRef}>
-          <ul className="ui-listbox" role="listbox" aria-multiselectable="true" id={listId}>
-            {options.map((o, i) => (
-              <li
-                key={o.value}
-                id={`${listId}-${i}`}
-                className="ui-option"
-                role="option"
-                aria-selected={value.includes(o.value)}
-                data-active={i === nav.active}
-                onPointerEnter={() => nav.setActive(i)}
-                onClick={() => toggleValue(o.value)}
-              >
-                <CheckMark visible={value.includes(o.value)} />
-                {o.label}
-              </li>
-            ))}
-          </ul>
-        </Popover>
-      )}
+      <Popover open={open} anchorRef={anchorRef} popoverRef={popoverRef}>
+        <ul className="ui-listbox" role="listbox" aria-multiselectable="true" id={listId}>
+          {options.map((o, i) => (
+            <li
+              key={o.value}
+              id={`${listId}-${i}`}
+              className="ui-option"
+              role="option"
+              aria-selected={value.includes(o.value)}
+              data-active={i === nav.active}
+              onPointerEnter={() => nav.setActive(i)}
+              onClick={() => toggleValue(o.value)}
+            >
+              <CheckMark visible={value.includes(o.value)} />
+              {o.label}
+            </li>
+          ))}
+        </ul>
+      </Popover>
     </div>
   );
 }
@@ -424,24 +429,22 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", id }:
         <span className={`ui-select-value ${value ? "" : "ui-select-placeholder"}`}>{value ? formatDate(value) : placeholder}</span>
         <Chevron />
       </button>
-      {open && (
-        <Popover anchorRef={anchorRef} popoverRef={popoverRef} className="ui-calendar" role="dialog" label="Choose date">
-          <div className="ui-calendar-head">
-            <button type="button" className="ui-calendar-nav" aria-label="Previous month" onClick={() => setView(new Date(year, month - 1, 1))}>‹</button>
-            <span className="ui-calendar-month">{MONTHS[month]} {year}</span>
-            <button type="button" className="ui-calendar-nav" aria-label="Next month" onClick={() => setView(new Date(year, month + 1, 1))}>›</button>
-          </div>
-          <div className="ui-calendar-grid">
-            {DOWS.map(d => <span key={d} className="ui-calendar-dow" aria-hidden="true">{d}</span>)}
-            {Array.from({ length: firstDow }, (_, i) => <button key={`pad-${i}`} type="button" className="ui-calendar-day" disabled aria-hidden="true" />)}
-            {Array.from({ length: daysInMonth }, (_, i) => (
-              <button key={i + 1} type="button" className="ui-calendar-day" aria-pressed={isSelected(i + 1)} onClick={() => pick(i + 1)}>
-                {i + 1}
-              </button>
-            ))}
-          </div>
-        </Popover>
-      )}
+      <Popover open={open} anchorRef={anchorRef} popoverRef={popoverRef} className="ui-calendar" role="dialog" label="Choose date">
+        <div className="ui-calendar-head">
+          <button type="button" className="ui-calendar-nav" aria-label="Previous month" onClick={() => setView(new Date(year, month - 1, 1))}>‹</button>
+          <span className="ui-calendar-month">{MONTHS[month]} {year}</span>
+          <button type="button" className="ui-calendar-nav" aria-label="Next month" onClick={() => setView(new Date(year, month + 1, 1))}>›</button>
+        </div>
+        <div className="ui-calendar-grid">
+          {DOWS.map(d => <span key={d} className="ui-calendar-dow" aria-hidden="true">{d}</span>)}
+          {Array.from({ length: firstDow }, (_, i) => <button key={`pad-${i}`} type="button" className="ui-calendar-day" disabled aria-hidden="true" />)}
+          {Array.from({ length: daysInMonth }, (_, i) => (
+            <button key={i + 1} type="button" className="ui-calendar-day" aria-pressed={isSelected(i + 1)} onClick={() => pick(i + 1)}>
+              {i + 1}
+            </button>
+          ))}
+        </div>
+      </Popover>
     </div>
   );
 }
@@ -626,28 +629,26 @@ export function TimePicker({ value, onChange, placeholder = "HH:MM", minuteStep 
   return (
     <div className="ui-popover-anchor" ref={anchorRef}>
       {trigger}
-      {open && (
-        <Popover anchorRef={anchorRef} popoverRef={popoverRef} className={`ui-timepicker ${coarse ? "ui-timepicker-wheels" : ""}`} role="dialog" label="Choose time">
-          {coarse
-            ? (
-              <>
-                <div className="ui-wheel-row">
-                  <div className="ui-wheel-band" aria-hidden="true" />
-                  <TimeWheel items={hours} selected={hour} onChange={pickHour} label="Hours" />
-                  <span className="ui-time-colon" aria-hidden="true">:</span>
-                  <TimeWheel items={allMinutes} selected={minute} onChange={pickMinute} label="Minutes" />
-                </div>
-                <button type="button" className="ui-time-done" onClick={() => setOpen(false)}>Done</button>
-              </>
-            )
-            : (
-              <>
-                <TimeList items={hours} selected={hour} onPick={pickHour} label="Hours" />
-                <TimeList items={stepMinutes} selected={minute} onPick={pickMinute} label="Minutes" />
-              </>
-            )}
-        </Popover>
-      )}
+      <Popover open={open} anchorRef={anchorRef} popoverRef={popoverRef} className={`ui-timepicker ${coarse ? "ui-timepicker-wheels" : ""}`} role="dialog" label="Choose time">
+        {coarse
+          ? (
+            <>
+              <div className="ui-wheel-row">
+                <div className="ui-wheel-band" aria-hidden="true" />
+                <TimeWheel items={hours} selected={hour} onChange={pickHour} label="Hours" />
+                <span className="ui-time-colon" aria-hidden="true">:</span>
+                <TimeWheel items={allMinutes} selected={minute} onChange={pickMinute} label="Minutes" />
+              </div>
+              <button type="button" className="ui-time-done" onClick={() => setOpen(false)}>Done</button>
+            </>
+          )
+          : (
+            <>
+              <TimeList items={hours} selected={hour} onPick={pickHour} label="Hours" />
+              <TimeList items={stepMinutes} selected={minute} onPick={pickMinute} label="Minutes" />
+            </>
+          )}
+      </Popover>
     </div>
   );
 }

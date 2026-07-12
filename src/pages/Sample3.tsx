@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Breadcrumb, Button, Card, ChatShimmer, DatePicker, Field, FileUpload, Form, RadioGroup, TextArea, TimePicker, Tooltip, useToast } from "../ui";
+import { Button, Card, ChatShimmer, DatePicker, Field, FileUpload, Form, RadioGroup, TextArea, TimePicker, Tooltip, useToast } from "../ui";
 import { RouteLink } from "../router";
 
 
@@ -46,15 +46,20 @@ export function Sample3() {
 
   return (
     <div className="sample">
-      <Breadcrumb items={[{ label: <RouteLink className="ui-link" to="/">Components</RouteLink> }, { label: "Sample 3 — Assistant" }]} />
-
       <section className="grid sample-split chat-layout">
         <Card title="Aurora" subtitle="Your planning assistant">
           <div className="chat-log" aria-live="polite">
             {messages.map(m => (
               <div key={m.id} className={`chat-bubble chat-${m.from}`}>{m.text}</div>
             ))}
-            {thinking && <ChatShimmer label="Aurora is thinking…" lines={2} />}
+            {thinking && (
+              <div className="chat-typing">
+                <span className="chat-typing-avatar" aria-hidden="true" />
+                <div className="chat-typing-body">
+                  <ChatShimmer lines={2} label="Aurora is thinking…" />
+                </div>
+              </div>
+            )}
           </div>
           <div className="chat-composer">
             <TextArea

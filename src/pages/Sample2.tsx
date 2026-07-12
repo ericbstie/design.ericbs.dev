@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Breadcrumb, Button, Card, Progress, Select, Skeleton, Table, Tag, Timeline, Toggle, Tree } from "../ui";
+import { Button, Card, Progress, Select, Skeleton, Table, Tag, Timeline, Toggle, Tree } from "../ui";
 import { RouteLink } from "../router";
 
 
@@ -34,8 +34,6 @@ export function Sample2() {
 
   return (
     <div className="sample">
-      <Breadcrumb items={[{ label: <RouteLink className="ui-link" to="/">Components</RouteLink> }, { label: "Sample 2 — Dashboard" }]} />
-
       <div className="dash-toolbar">
         <h2>Overview</h2>
         <div className="demo-row">
